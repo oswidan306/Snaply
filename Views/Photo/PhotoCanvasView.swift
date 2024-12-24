@@ -1,38 +1,26 @@
-//
-//  PhotoCanvasView.swift
-//  Snaply
-//
-//  Created by Omar Swidan on 12/15/24.
-//
-
 import SwiftUI
 
 struct PhotoCanvasView: View {
     @ObservedObject var viewModel: DiaryViewModel
     @Binding var activeTextId: UUID?
     @Binding var isTyping: Bool
+    let containerWidth: CGFloat
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Base photo layer
-                if let currentEntry = viewModel.currentEntry {
-                    Image(uiImage: currentEntry.photo)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: geometry.size.width - 32)
-                        .frame(height: UIScreen.main.bounds.height * 0.7)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .padding(.horizontal, 16)
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear.preference(
-                                    key: FramePreferenceKey.self,
-                                    value: geo.frame(in: .local)
-                                )
-                            }
-                        )
-                    
+        let height = UIScreen.main.bounds.height * 0.64
+        
+        ZStack(alignment: .center) {
+            if let currentEntry = viewModel.currentEntry {
+                // Image layer
+                Image(uiImage: currentEntry.photo)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: containerWidth, maxHeight: height)
+                    .clipped()
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                
+                // Overlay content
+                ZStack(alignment: .center) {
                     // Drawing paths layer
                     ForEach(currentEntry.drawingPaths) { path in
                         Path { p in
@@ -55,7 +43,7 @@ struct PhotoCanvasView: View {
                         )
                     }
                     
-                    // Current drawing path if in drawing mode
+                    // Current drawing path
                     if viewModel.isDrawing, let currentLine = viewModel.currentLine {
                         Path { path in
                             guard let first = currentLine.points.first else { return }
@@ -67,42 +55,9 @@ struct PhotoCanvasView: View {
                         .stroke(viewModel.selectedColor, lineWidth: 3)
                     }
                 }
-            }
-            .contentShape(Rectangle())
-            .gesture(
-                viewModel.isDrawing ?
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        let point = value.location
-                        if viewModel.currentLine == nil {
-                            viewModel.currentLine = DrawingPath(points: [point], color: viewModel.selectedColor)
-                        } else {
-                            viewModel.currentLine?.points.append(point)
-                        }
-                    }
-                    .onEnded { _ in
-                        if let line = viewModel.currentLine {
-                            viewModel.addDrawingPath(line)
-                            viewModel.currentLine = nil
-                        }
-                    }
-                : nil
-            )
-            .onTapGesture {
-                if isTyping && activeTextId != nil {
-                    viewModel.updateTextOverlay(
-                        id: activeTextId!,
-                        text: viewModel.currentEntry?.textOverlays.first(where: { $0.id == activeTextId })?.text ?? ""
-                    )
-                    isTyping = false
-                }
-                activeTextId = nil
-            }
-            .onPreferenceChange(FramePreferenceKey.self) { frame in
-                viewModel.photoFrame = frame
+                .frame(maxWidth: containerWidth, maxHeight: height)
             }
         }
-        .frame(height: UIScreen.main.bounds.height * 0.7)
+        .frame(width: containerWidth, height: height)
     }
 }
-

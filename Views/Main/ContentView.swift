@@ -20,42 +20,74 @@ struct ContentView: View {
     
     var body: some View {
         GeometryReader { geometry in
+            let contentWidth = geometry.size.width - 32
+            
             ZStack(alignment: .top) {
                 // Background
                 Color(hex: "#FBFBFB").ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                    // Fixed Header
                     HeaderView(slideViewModel: slideViewModel)
                         .zIndex(1)
+                        .frame(width: geometry.size.width)
                     
-                    // Sliding Content
-                    VStack(spacing: 0) {
-                        DateComponent()
-                            .padding(.top, 16)
-                        
-                        if let _ = viewModel.currentEntry {
-                            PhotoCanvasView(
-                                viewModel: viewModel,
-                                activeTextId: $activeTextId,
-                                isTyping: $isTyping
-                            )
-                            .padding(.top, 16)
-                        } else {
-                            PhotoPickerView(selectedItem: $selectedItem)
-                                .padding(.top, 16)
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: 0) {
+                            DateComponent()
+                                .padding(.top, 12)
+                                .frame(width: contentWidth)
+                            
+                            Group {
+                                if let _ = viewModel.currentEntry {
+                                    PhotoCanvasView(
+                                        viewModel: viewModel,
+                                        activeTextId: $activeTextId,
+                                        isTyping: $isTyping,
+                                        containerWidth: contentWidth
+                                    )
+                                } else {
+                                    PhotoPickerView(
+                                        selectedItem: $selectedItem,
+                                        containerWidth: contentWidth
+                                    )
+                                }
+                            }
+                            .padding(.top, 12)
+                            
+                            Spacer()
+                            
+                            Group {
+                                if let _ = viewModel.currentEntry {
+                                    FooterView(
+                                        viewModel: viewModel,
+                                        activeTextId: $activeTextId,
+                                        isTyping: $isTyping,
+                                        showingEmotionPicker: $showingEmotionPicker,
+                                        selectedItem: $selectedItem
+                                    )
+                                } else {
+                                    // Past button
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                        
+                                        Text("PAST")
+                                            .font(.system(size: 12, weight: .regular))
+                                            .foregroundColor(.gray)
+                                            .monospaced()
+                                            .tracking(2)
+                                        
+                                        Image(systemName: "chevron.down")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.bottom, 16)
+                                }
+                            }
                         }
-                        
-                        Spacer()
-                        
-                        Text("PAST")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(.gray)
-                            .monospaced()
-                            .tracking(2)
-                            .padding(.bottom, 16)
                     }
-                    .offset(y: slideViewModel.slideOffset)
                 }
                 
                 // Calendar View

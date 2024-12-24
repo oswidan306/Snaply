@@ -78,13 +78,6 @@ struct FooterView: View {
                         .disabled(viewModel.currentEntry == nil)
                     }
                     .frame(width: 140)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 10)
-                    .background(
-                        Capsule()
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.1), radius: 4)
-                    )
                     
                     Spacer()
                     
@@ -108,7 +101,6 @@ struct FooterView: View {
                     }
                     .frame(width: 60, alignment: .trailing)  // Fixed width container
                 }
-                .padding(.horizontal)
             } else {
                 // Show Past button when no image is selected
                 PastButton {
@@ -116,8 +108,7 @@ struct FooterView: View {
                 }
             }
         }
-        .padding(.top, 16)
-        .padding(.bottom, 16)
+        .padding(.vertical, 16)
     }
 }
 

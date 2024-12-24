@@ -12,10 +12,9 @@ struct HeaderView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Reduced top spacing
             Rectangle()
                 .fill(.clear)
-                .frame(height: 24)
+                .frame(height: 8)
             
             HStack {
                 Image("calendar_icon")
@@ -37,7 +36,6 @@ struct HeaderView: View {
                     .scaledToFit()
                     .frame(width: 64, height: 64)
             }
-            .padding(.horizontal)
         }
         .background(
             Color(hex: "#FBFBFB")
