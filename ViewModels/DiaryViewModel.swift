@@ -15,12 +15,12 @@ typealias UIImage = NSImage
 #endif
 
 class DiaryViewModel: ObservableObject {
-    @Published var entries: [PhotoEntry] = []
-    @Published var currentEntry: PhotoEntry?
+    @Published var entries: [Models.PhotoEntry] = []
+    @Published var currentEntry: Models.PhotoEntry?
     @Published var draggedOverlayPositions: [UUID: CGPoint] = [:]
     @Published var isDrawing = false
-    @Published var currentLine: DrawingPath?
-    @Published var drawingPaths: [DrawingPath] = []
+    @Published var currentLine: Models.DrawingPath?
+    @Published var drawingPaths: [Models.DrawingPath] = []
     @Published var selectedColor: Color = .white
     @Published var emotions: [Emotion] = [
         Emotion(name: "Joy", emoji: "😊"),
@@ -41,6 +41,12 @@ class DiaryViewModel: ObservableObject {
     
     var photoFrame: CGRect = .zero
     
+    private let containerWidth: CGFloat
+    
+    init(containerWidth: CGFloat) {
+        self.containerWidth = containerWidth
+    }
+    
     var selectedEmotionsCount: Int {
         emotions.filter { $0.isSelected }.count
     }
@@ -48,15 +54,13 @@ class DiaryViewModel: ObservableObject {
     // MARK: - Photo Management
     
     func addNewPhoto(_ image: UIImage) {
-        // Reset all emotion selections
         emotions.indices.forEach { emotions[$0].isSelected = false }
-        
-        let newEntry = PhotoEntry(photo: image)
+        let newEntry = Models.PhotoEntry(photo: image)
         currentEntry = newEntry
         entries.append(newEntry)
     }
     
-    func updateEntry(_ entry: PhotoEntry) {
+    func updateEntry(_ entry: Models.PhotoEntry) {
         if let index = entries.firstIndex(where: { $0.id == entry.id }) {
             entries[index] = entry
             if currentEntry?.id == entry.id {
@@ -73,12 +77,27 @@ class DiaryViewModel: ObservableObject {
     // MARK: - Text Overlay Management
     
     func addTextOverlay() {
-        guard var entry = currentEntry else { return }
-        entry.saveState()
-        let centerPosition = CGPoint(x: 0.5, y: 0.5)
-        let newOverlay = TextOverlay(text: "Tap to edit", position: centerPosition)
-        entry.textOverlays.append(newOverlay)
-        updateEntry(entry)
+        guard let currentEntry = currentEntry else { return }
+        
+        var mutableEntry = currentEntry
+        mutableEntry.saveState()
+        
+        // Center position in absolute coordinates
+        let centerPosition = CGPoint(
+            x: containerWidth / 2,
+            y: UIScreen.main.bounds.height * 0.35  // Center vertically (0.7/2)
+        )
+        
+        let newOverlay = Models.TextOverlay(
+            text: "Tap to edit",
+            position: centerPosition,
+            style: Models.TextStyle(),
+            color: .white,
+            width: 200
+        )
+        
+        mutableEntry.textOverlays.append(newOverlay)
+        updateEntry(mutableEntry)
     }
     
     func updateTextOverlay(id: UUID, text: String? = nil, position: CGPoint? = nil) {
@@ -95,7 +114,7 @@ class DiaryViewModel: ObservableObject {
         }
     }
     
-    func updateTextOverlayStyle(id: UUID, fontSize: CGFloat? = nil, fontStyle: FontStyle? = nil, color: Color? = nil) {
+    func updateTextOverlayStyle(id: UUID, fontSize: CGFloat? = nil, fontStyle: Models.FontStyle? = nil, color: Color? = nil) {
         guard var entry = currentEntry else { return }
         if let index = entry.textOverlays.firstIndex(where: { $0.id == id }) {
             entry.saveState()
@@ -138,7 +157,7 @@ class DiaryViewModel: ObservableObject {
             y: originalOverlay.position.y + 0.05
         )
         let newId = UUID()
-        let duplicateOverlay = TextOverlay(
+        let duplicateOverlay = Models.TextOverlay(
             id: newId,
             text: originalOverlay.text,
             position: newPosition,
@@ -151,13 +170,26 @@ class DiaryViewModel: ObservableObject {
         return newId
     }
     
+    // MARK: - Drawing Management
+    
+    func addDrawingPath(_ path: Models.DrawingPath) {
+        saveState()
+        let coloredPath = Models.DrawingPath(points: path.points, color: selectedColor)
+        drawingPaths.append(coloredPath)
+        if var entry = currentEntry {
+            entry.drawingPaths = drawingPaths
+            updateEntry(entry)
+        }
+    }
+    
     // MARK: - Position Management
     
     func getActualPosition(for id: UUID, in frame: CGRect) -> CGPoint {
         let relativePosition = draggedOverlayPositions[id] ??
-        currentEntry?.textOverlays.first(where: { $0.id == id })?.position ??
-        CGPoint(x: 0.5, y: 0.5)
+            currentEntry?.textOverlays.first(where: { $0.id == id })?.position ??
+            CGPoint(x: 0.5, y: 0.5)
         
+        // Simply multiply by frame dimensions since we're already accounting for minX/minY in the view
         return CGPoint(
             x: relativePosition.x * frame.width,
             y: relativePosition.y * frame.height
@@ -165,23 +197,10 @@ class DiaryViewModel: ObservableObject {
     }
     
     func updatePosition(_ position: CGPoint, for id: UUID, in frame: CGRect) {
-        let relativePosition = CGPoint(
-            x: position.x / frame.width,
-            y: position.y / frame.height
-        )
-        draggedOverlayPositions[id] = relativePosition
-    }
-    
-    // MARK: - Drawing Management
-    
-    func addDrawingPath(_ path: DrawingPath) {
-        saveState()
-        let coloredPath = DrawingPath(points: path.points, color: selectedColor)
-        drawingPaths.append(coloredPath)
-        if let entry = currentEntry {
-            var updatedEntry = entry
-            updatedEntry.drawingPaths = drawingPaths
-            updateEntry(updatedEntry)
+        if var entry = currentEntry,
+           let index = entry.textOverlays.firstIndex(where: { $0.id == id }) {
+            entry.textOverlays[index].position = position
+            updateEntry(entry)
         }
     }
     
@@ -205,6 +224,7 @@ class DiaryViewModel: ObservableObject {
     }
     
     // MARK: - Undo Management
+    
     func hasEdits() -> Bool {
         guard let entry = currentEntry else { return false }
         return !entry.textOverlays.isEmpty || !entry.drawingPaths.isEmpty

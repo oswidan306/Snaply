@@ -31,9 +31,17 @@ struct FooterView: View {
                     HStack {
                         if viewModel.hasEdits() {
                             UndoButton(viewModel: viewModel)
+                                .frame(width: 28, height: 28)
+                                .foregroundColor(.white)
+                                .padding([.horizontal], 10)
+                                .padding([.vertical], 8)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.3))
+                                )
                         }
                     }
-                    .frame(width: 60, alignment: .leading)  // Fixed width container
+                    .frame(width: 48, alignment: .leading)
                     
                     Spacer()
                     
@@ -46,7 +54,13 @@ struct FooterView: View {
                             Image("text_icon")
                                 .resizable()
                                 .frame(width: 28, height: 28)
-                                .foregroundColor(.black)
+                                .foregroundColor(.white)
+                                .padding([.horizontal], 10)
+                                .padding([.vertical], 8)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.3))
+                                )
                         }
                         .disabled(viewModel.currentEntry == nil)
                         
@@ -60,7 +74,13 @@ struct FooterView: View {
                             Image("scribble_icon")
                                 .resizable()
                                 .frame(width: 28, height: 28)
-                                .foregroundColor(viewModel.isDrawing ? .blue : .black)
+                                .foregroundColor(viewModel.isDrawing ? .blue : .white)
+                                .padding([.horizontal], 10)
+                                .padding([.vertical], 8)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.3))
+                                )
                         }
                         .disabled(viewModel.currentEntry == nil)
                         
@@ -73,11 +93,17 @@ struct FooterView: View {
                             Image("emotions_icon")
                                 .resizable()
                                 .frame(width: 28, height: 28)
-                                .foregroundColor(showingEmotionPicker ? .blue : .black)
+                                .foregroundColor(showingEmotionPicker ? .blue : .white)
+                                .padding([.horizontal], 10)
+                                .padding([.vertical], 8)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.black.opacity(0.3))
+                                )
                         }
                         .disabled(viewModel.currentEntry == nil)
                     }
-                    .frame(width: 140)
+                    .frame(width: 160)
                     
                     Spacer()
                     
@@ -88,18 +114,17 @@ struct FooterView: View {
                                 Image("replace_icon")
                                     .resizable()
                                     .frame(width: 28, height: 28)
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 8)
+                                    .foregroundColor(.white)
+                                    .padding([.horizontal], 10)
+                                    .padding([.vertical], 8)
+                                    .background(
+                                        Capsule()
+                                            .fill(Color.black.opacity(0.3))
+                                    )
                             }
-                            .background(
-                                Capsule()
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.1), radius: 4)
-                            )
                         }
                     }
-                    .frame(width: 60, alignment: .trailing)  // Fixed width container
+                    .frame(width: 48, alignment: .trailing)
                 }
             } else {
                 // Show Past button when no image is selected

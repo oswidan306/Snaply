@@ -25,7 +25,9 @@ struct SnaplyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            GeometryReader { geometry in
+                ContentView(containerWidth: geometry.size.width - 32)
+            }
         }
         .modelContainer(sharedModelContainer)
     }

@@ -9,20 +9,28 @@ import SwiftUI
 
 struct EditableTextOverlay: View {
     @ObservedObject var viewModel: DiaryViewModel
-    let overlay: TextOverlay
+    let overlay: Models.TextOverlay
+    let containerWidth: CGFloat
     @Binding var activeTextId: UUID?
     @Binding var isTyping: Bool
     @State private var editingText: String
     @State private var fontSize: CGFloat
-    @State private var selectedFont: FontStyle
+    @State private var selectedFont: Models.FontStyle
     @State private var textColor: Color
+    @State private var offset: CGSize = .zero
+    
+    private var isActive: Bool {
+        activeTextId == overlay.id
+    }
     
     init(viewModel: DiaryViewModel,
-         overlay: TextOverlay,
+         overlay: Models.TextOverlay,
+         containerWidth: CGFloat,
          activeTextId: Binding<UUID?>,
          isTyping: Binding<Bool>) {
         self.viewModel = viewModel
         self.overlay = overlay
+        self.containerWidth = containerWidth
         self._activeTextId = activeTextId
         self._isTyping = isTyping
         self._editingText = State(initialValue: overlay.text)
@@ -32,50 +40,54 @@ struct EditableTextOverlay: View {
     }
     
     var body: some View {
-        ZStack(alignment: .top) {
-            if activeTextId == overlay.id && isTyping {
+        Group {
+            if isActive && isTyping {
                 editableTextField
             } else {
                 staticTextField
             }
-            
-            // Show action bar when text is selected but not being edited
-            if activeTextId == overlay.id && !isTyping {
-                TextFieldActionsBar(
-                    viewModel: viewModel,
-                    overlayId: overlay.id,
-                    fontSize: $fontSize,
-                    selectedFont: $selectedFont,
-                    textColor: $textColor,
-                    activeTextId: $activeTextId
-                )
-                .offset(y: -52)
-            }
         }
+        .offset(offset)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    offset = value.translation
+                }
+                .onEnded { value in
+                    let newPosition = CGPoint(
+                        x: overlay.position.x + value.translation.width,
+                        y: overlay.position.y + value.translation.height
+                    )
+                    
+                    // Constrain to photo bounds
+                    let boundedX = max(0, min(newPosition.x, containerWidth))
+                    let boundedY = max(0, min(newPosition.y, UIScreen.main.bounds.height * 0.7))
+                    
+                    offset = .zero
+                    viewModel.updatePosition(
+                        CGPoint(x: boundedX, y: boundedY),
+                        for: overlay.id,
+                        in: viewModel.photoFrame
+                    )
+                }
+        )
+        .position(overlay.position)
     }
     
     private var editableTextField: some View {
         TextField("Enter text", text: $editingText, axis: .vertical)
             .font(selectedFont.font(size: fontSize))
             .foregroundColor(textColor)
-            .shadow(color: .black, radius: 2)
-            .frame(width: overlay.width)
-            .lineLimit(5)
             .multilineTextAlignment(.center)
+            .frame(width: overlay.width)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
             .background(
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.blue.opacity(0.5), lineWidth: 2)
-            )
-            .position(
-                viewModel.getActualPosition(for: overlay.id, in: viewModel.photoFrame)
+                    .stroke(Color.blue, lineWidth: 2)
             )
             .onSubmit {
                 submitText()
-            }
-            .onChange(of: isTyping) { newValue in
-                if !newValue {
-                    submitText()
-                }
             }
     }
     
@@ -83,90 +95,30 @@ struct EditableTextOverlay: View {
         Text(overlay.text)
             .font(selectedFont.font(size: fontSize))
             .foregroundColor(textColor)
-            .shadow(color: .black, radius: 2)
-            .frame(width: overlay.width)
-            .fixedSize(horizontal: false, vertical: true)
             .multilineTextAlignment(.center)
+            .frame(width: overlay.width)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
             .background(
-                RoundedRectangle(cornerRadius: 4)
-                    .stroke(activeTextId == overlay.id ? Color.blue.opacity(0.5) : Color.clear,
-                           lineWidth: 2)
-            )
-            .position(
-                viewModel.getActualPosition(for: overlay.id, in: viewModel.photoFrame)
-            )
-            .gesture(dragGesture)
-            .overlay(
                 Group {
-                    if activeTextId == overlay.id {
-                        resizeHandles
+                    if isActive {
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.blue, lineWidth: 2)
+                            .overlay(
+                                ResizeHandles(width: overlay.width) { newWidth in
+                                    viewModel.updateTextOverlayWidth(id: overlay.id, width: newWidth)
+                                }
+                            )
                     }
                 }
             )
             .onTapGesture {
                 activeTextId = overlay.id
-                editingText = overlay.text
                 isTyping = false
             }
             .onTapGesture(count: 2) {
-                withAnimation {
-                    activeTextId = overlay.id
-                    editingText = overlay.text
-                    isTyping = true
-                }
-            }
-    }
-    
-    private var resizeHandles: some View {
-        GeometryReader { geo in
-            HStack {
-                // Left handle
-                ResizeHandle()
-                    .offset(x: -3)
-                    .position(x: 0, y: geo.size.height / 2)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                let change = -value.translation.width
-                                let newWidth = overlay.width + change
-                                let constrainedWidth = min(max(100, newWidth), viewModel.photoFrame.width - 40)
-                                viewModel.updateTextOverlayWidth(id: overlay.id, width: constrainedWidth)
-                            }
-                    )
-                
-                Spacer()
-                
-                // Right handle
-                ResizeHandle()
-                    .offset(x: 3)
-                    .position(x: geo.size.width, y: geo.size.height / 2)
-                    .gesture(
-                        DragGesture(coordinateSpace: .global)
-                            .onChanged { value in
-                                let startX = geo.frame(in: .global).maxX
-                                let dragX = value.location.x
-                                let newWidth = overlay.width + (dragX - startX)
-                                let constrainedWidth = min(max(100, newWidth), viewModel.photoFrame.width - 40)
-                                viewModel.updateTextOverlayWidth(id: overlay.id, width: constrainedWidth)
-                            }
-                    )
-            }
-        }
-    }
-    
-    private var dragGesture: some Gesture {
-        DragGesture(coordinateSpace: .local)
-            .onChanged { value in
-                let clampedPosition = clampPosition(
-                    value.location,
-                    in: viewModel.photoFrame,
-                    textWidth: overlay.width
-                )
-                viewModel.updatePosition(
-                    clampedPosition,
-                    for: overlay.id,
-                    in: viewModel.photoFrame
-                )
+                activeTextId = overlay.id
+                isTyping = true
             }
     }
     
@@ -174,11 +126,45 @@ struct EditableTextOverlay: View {
         viewModel.updateTextOverlay(id: overlay.id, text: editingText)
         isTyping = false
     }
+}
+
+// Separate view for resize handles
+private struct ResizeHandles: View {
+    let width: CGFloat
+    let onResize: (CGFloat) -> Void
     
-    private func clampPosition(_ position: CGPoint, in frame: CGRect, textWidth: CGFloat) -> CGPoint {
-        return CGPoint(
-            x: min(max(position.x, textWidth/2 + 20), frame.width - textWidth/2 - 20),
-            y: min(max(position.y, 20), frame.height - 20)
-        )
+    var body: some View {
+        HStack(spacing: 0) {
+            // Left handle
+            ResizeHandle()
+                .frame(width: 12, height: 12)
+                .offset(x: 6) // Move right by half width
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            let change = -value.translation.width
+                            let newWidth = width + change
+                            let constrainedWidth = min(max(100, newWidth), UIScreen.main.bounds.width - 40)
+                            onResize(constrainedWidth)
+                        }
+                )
+            
+            Spacer()
+            
+            // Right handle
+            ResizeHandle()
+                .frame(width: 12, height: 12)
+                .offset(x: -6) // Move left by half width
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            let change = value.translation.width
+                            let newWidth = width + change
+                            let constrainedWidth = min(max(100, newWidth), UIScreen.main.bounds.width - 40)
+                            onResize(constrainedWidth)
+                        }
+                )
+        }
+        .frame(width: width)
     }
 } 

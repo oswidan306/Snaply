@@ -7,14 +7,10 @@
 
 import Foundation
 
-struct Emotion: Identifiable, Hashable {
+struct Emotion: Identifiable {
     let id = UUID()
     let name: String
     let emoji: String
     var isSelected: Bool = false
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
 }
 

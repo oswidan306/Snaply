@@ -1,10 +1,3 @@
-//
-//  UndoButton.swift
-//  Snaply
-//
-//  Created by Omar Swidan on 12/15/24.
-//
-
 import SwiftUI
 
 struct UndoButton: View {
@@ -14,7 +7,7 @@ struct UndoButton: View {
         Button(action: {
             viewModel.undo()
         }) {
-            Image("undo_icon")
+            Image(systemName: "arrow.uturn.backward")
                 .resizable()
                 .frame(width: 28, height: 28)
                 .foregroundColor(.black)
@@ -28,4 +21,8 @@ struct UndoButton: View {
                 .shadow(color: .black.opacity(0.1), radius: 4)
         )
     }
+}
+
+#Preview {
+    UndoButton(viewModel: PreviewData.viewModel)
 } 

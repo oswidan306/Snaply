@@ -7,15 +7,24 @@
 
 import SwiftUI
 
-struct DrawingPath: Identifiable {
-    let id: UUID = UUID()
-    var points: [CGPoint]
-    var color: Color
-    var lineWidth: CGFloat = 3
-    
-    init(points: [CGPoint], color: Color = .white) {
-        self.points = points
-        self.color = color
+public extension Models {
+    public struct DrawingPath: Identifiable {
+        public let id: UUID
+        public var points: [CGPoint]
+        public var color: Color
+        public var lineWidth: CGFloat
+        
+        public init(
+            id: UUID = UUID(),
+            points: [CGPoint],
+            color: Color,
+            lineWidth: CGFloat = 3
+        ) {
+            self.id = id
+            self.points = points
+            self.color = color
+            self.lineWidth = lineWidth
+        }
     }
 }
 

@@ -10,13 +10,17 @@ import PhotosUI
 import UIKit
 
 struct ContentView: View {
-    @StateObject private var viewModel = DiaryViewModel()
+    @StateObject private var viewModel: DiaryViewModel
     @StateObject private var slideViewModel = SlideViewModel()
     @State private var selectedItem: PhotosPickerItem?
     @State private var activeTextId: UUID?
     @State private var isTyping: Bool = false
     @State private var showingEmotionPicker = false
     @State private var isDraggingUp = false
+    
+    init(containerWidth: CGFloat) {
+        _viewModel = StateObject(wrappedValue: DiaryViewModel(containerWidth: containerWidth))
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -43,6 +47,8 @@ struct ContentView: View {
                                         viewModel: viewModel,
                                         activeTextId: $activeTextId,
                                         isTyping: $isTyping,
+                                        showingEmotionPicker: $showingEmotionPicker,
+                                        selectedItem: $selectedItem,
                                         containerWidth: contentWidth
                                     )
                                 } else {
@@ -56,35 +62,24 @@ struct ContentView: View {
                             
                             Spacer()
                             
-                            Group {
-                                if let _ = viewModel.currentEntry {
-                                    FooterView(
-                                        viewModel: viewModel,
-                                        activeTextId: $activeTextId,
-                                        isTyping: $isTyping,
-                                        showingEmotionPicker: $showingEmotionPicker,
-                                        selectedItem: $selectedItem
-                                    )
-                                } else {
-                                    // Past button
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "chevron.down")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
-                                        
-                                        Text("PAST")
-                                            .font(.system(size: 12, weight: .regular))
-                                            .foregroundColor(.gray)
-                                            .monospaced()
-                                            .tracking(2)
-                                        
-                                        Image(systemName: "chevron.down")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.bottom, 16)
+                            if viewModel.currentEntry == nil {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                    
+                                    Text("PAST")
+                                        .font(.system(size: 12, weight: .regular))
+                                        .foregroundColor(.gray)
+                                        .monospaced()
+                                        .tracking(2)
+                                    
+                                    Image(systemName: "chevron.down")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
                                 }
+                                .frame(maxWidth: .infinity)
+                                .padding(.bottom, 16)
                             }
                         }
                     }
@@ -143,3 +138,11 @@ struct ContentView: View {
         }
     }
 }
+
+#if DEBUG
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ContentView(containerWidth: PreviewData.containerWidth)
+    }
+}
+#endif
