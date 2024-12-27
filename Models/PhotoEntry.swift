@@ -14,7 +14,7 @@ public extension Models {
         public var textOverlays: [TextOverlay]
         public var drawingPaths: [DrawingPath]
         public var emotions: [String]
-        private var history: [[TextOverlay]]
+        private var history: [(textOverlays: [TextOverlay], drawingPaths: [DrawingPath])]
         
         public init(
             id: UUID = UUID(),
@@ -32,12 +32,13 @@ public extension Models {
         }
         
         mutating func saveState() {
-            history.append(textOverlays)
+            history.append((textOverlays: textOverlays, drawingPaths: drawingPaths))
         }
         
         mutating func undo() -> Bool {
             guard let previousState = history.popLast() else { return false }
-            textOverlays = previousState
+            textOverlays = previousState.textOverlays
+            drawingPaths = previousState.drawingPaths
             return true
         }
     }

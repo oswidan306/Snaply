@@ -200,13 +200,12 @@ class DiaryViewModel: ObservableObject {
     // MARK: - Drawing Management
     
     func addDrawingPath(_ path: Models.DrawingPath) {
-        saveState()
+        guard var entry = currentEntry else { return }
+        entry.saveState()
         let coloredPath = Models.DrawingPath(points: path.points, color: selectedColor)
         drawingPaths.append(coloredPath)
-        if var entry = currentEntry {
-            entry.drawingPaths = drawingPaths
-            updateEntry(entry)
-        }
+        entry.drawingPaths = drawingPaths
+        updateEntry(entry)
     }
     
     // MARK: - Position Management

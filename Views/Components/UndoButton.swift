@@ -10,16 +10,15 @@ struct UndoButton: View {
             Image(systemName: "arrow.uturn.backward")
                 .resizable()
                 .frame(width: 28, height: 28)
-                .foregroundColor(.black)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
+                .foregroundColor(.white)
+                .padding([.horizontal], 10)
+                .padding([.vertical], 8)
+                .background(
+                    Capsule()
+                        .fill(Color.black.opacity(0.3))
+                )
         }
         .disabled(!viewModel.hasEdits())
-        .background(
-            Capsule()
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.1), radius: 4)
-        )
     }
 }
 
