@@ -77,22 +77,20 @@ class DiaryViewModel: ObservableObject {
     // MARK: - Text Overlay Management
     
     func addTextOverlay() {
-        guard let currentEntry = currentEntry else { return }
-        
-        var mutableEntry = currentEntry
+        guard var mutableEntry = currentEntry else { return }
         mutableEntry.saveState()
         
-        // Center position in absolute coordinates
+        // Calculate center position relative to the photo frame
         let centerPosition = CGPoint(
-            x: containerWidth / 2,
-            y: UIScreen.main.bounds.height * 0.35  // Center vertically (0.7/2)
+            x: 0.5,  // This gives us center horizontally (50%)
+            y: 0.5   // This gives us center vertically (50%)
         )
         
         let newOverlay = Models.TextOverlay(
-            text: "Tap to edit",
+            text: "Enter text",
             position: centerPosition,
             style: Models.TextStyle(),
-            color: .white,
+            color: .black,
             width: 200
         )
         
@@ -100,21 +98,46 @@ class DiaryViewModel: ObservableObject {
         updateEntry(mutableEntry)
     }
     
-    func updateTextOverlay(id: UUID, text: String? = nil, position: CGPoint? = nil) {
-        guard var entry = currentEntry else { return }
-        if let index = entry.textOverlays.firstIndex(where: { $0.id == id }) {
-            if let newText = text {
-                entry.textOverlays[index].text = newText
-            }
-            if let newPosition = position {
-                entry.textOverlays[index].position = newPosition
-                draggedOverlayPositions[id] = newPosition
-            }
-            updateEntry(entry)
+    func updateTextOverlay(
+        id: UUID,
+        text: String? = nil,
+        position: CGPoint? = nil,
+        style: Models.TextStyle? = nil,
+        color: Color? = nil,
+        width: CGFloat? = nil
+    ) {
+        guard var entry = currentEntry,
+              let index = entry.textOverlays.firstIndex(where: { $0.id == id }) else { return }
+        
+        var overlay = entry.textOverlays[index]
+        
+        if let text = text {
+            overlay.text = text
         }
+        if let position = position {
+            // Store the absolute position, not relative to the photo frame
+            overlay.position = position
+        }
+        if let style = style {
+            overlay.style = style
+        }
+        if let color = color {
+            overlay.color = color
+        }
+        if let width = width {
+            overlay.width = width
+        }
+        
+        entry.textOverlays[index] = overlay
+        updateEntry(entry)
     }
     
-    func updateTextOverlayStyle(id: UUID, fontSize: CGFloat? = nil, fontStyle: Models.FontStyle? = nil, color: Color? = nil) {
+    func updateTextOverlayStyle(
+        id: UUID, 
+        fontSize: CGFloat? = nil, 
+        fontStyle: Models.FontStyle? = nil,
+        color: Color? = nil
+    ) {
         guard var entry = currentEntry else { return }
         if let index = entry.textOverlays.firstIndex(where: { $0.id == id }) {
             entry.saveState()
@@ -196,12 +219,25 @@ class DiaryViewModel: ObservableObject {
         )
     }
     
-    func updatePosition(_ position: CGPoint, for id: UUID, in frame: CGRect) {
-        if var entry = currentEntry,
-           let index = entry.textOverlays.firstIndex(where: { $0.id == id }) {
-            entry.textOverlays[index].position = position
-            updateEntry(entry)
-        }
+    func convertToRelativePosition(_ absolutePosition: CGPoint, in frame: CGRect) -> CGPoint {
+        // Convert absolute position to percentage (0.0 to 1.0)
+        CGPoint(
+            x: (absolutePosition.x - frame.minX) / frame.width,
+            y: (absolutePosition.y - frame.minY) / frame.height
+        )
+    }
+    
+    func convertToAbsolutePosition(_ relativePosition: CGPoint, in frame: CGRect) -> CGPoint {
+        // Convert percentage position to absolute coordinates
+        CGPoint(
+            x: frame.minX + (relativePosition.x * frame.width),
+            y: frame.minY + (relativePosition.y * frame.height)
+        )
+    }
+    
+    func updatePosition(_ absolutePosition: CGPoint, for id: UUID, in frame: CGRect) {
+        let relativePosition = convertToRelativePosition(absolutePosition, in: frame)
+        updateTextOverlay(id: id, position: relativePosition)
     }
     
     // MARK: - Emotion Management

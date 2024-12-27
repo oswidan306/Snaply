@@ -7,7 +7,6 @@
 
 import SwiftUI
 import PhotosUI
-import Snaply
 
 struct FooterView: View {
     @ObservedObject var viewModel: DiaryViewModel

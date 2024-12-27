@@ -8,7 +8,17 @@
 import SwiftUI
 
 public extension Models {
-    public struct TextOverlay: Identifiable {
+    struct TextStyle {
+        var fontSize: CGFloat
+        var fontStyle: FontStyle
+        
+        init(fontSize: CGFloat = 24, fontStyle: FontStyle = .regular) {
+            self.fontSize = fontSize
+            self.fontStyle = fontStyle
+        }
+    }
+    
+    struct TextOverlay: Identifiable {
         public let id: UUID
         public var text: String
         public var position: CGPoint

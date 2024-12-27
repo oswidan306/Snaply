@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 import PhotosUI
 
 struct PhotoCanvasView: View {
@@ -15,62 +16,40 @@ struct PhotoCanvasView: View {
     @Binding var showingEmotionPicker: Bool
     @Binding var selectedItem: PhotosPickerItem?
     let containerWidth: CGFloat
-    @State private var activeTextFrame: CGRect = .zero
     
     var body: some View {
         ZStack(alignment: .bottom) {
             if let currentEntry = viewModel.currentEntry {
-                // Text overlays layer
-                ZStack {
-                    // Base photo layer with fixed height
-                    Image(uiImage: currentEntry.photo)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: containerWidth)
-                        .frame(height: UIScreen.main.bounds.height * 0.7)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear.preference(
-                                    key: FramePreferenceKey.self,
-                                    value: geo.frame(in: .local)
-                                )
-                            }
-                        )
-                    
-                    // Text overlays layer in a fixed size container
-                    ForEach(currentEntry.textOverlays) { overlay in
-                        EditableTextOverlay(
-                            viewModel: viewModel,
-                            overlay: overlay,
-                            containerWidth: containerWidth,
-                            activeTextId: $activeTextId,
-                            isTyping: $isTyping
-                        )
-                        .frame(width: containerWidth)
-                        .frame(height: UIScreen.main.bounds.height * 0.7)
+                // Base photo layer with fixed height
+                Image(uiImage: currentEntry.photo)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: containerWidth)
+                    .frame(height: UIScreen.main.bounds.height * 0.7)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(
+                                key: FramePreferenceKey.self,
+                                value: geo.frame(in: .local)
+                            )
+                        }
+                    )
+                    .onPreferenceChange(FramePreferenceKey.self) { frame in
+                        viewModel.photoFrame = frame
+                        print("Photo frame updated: \(frame)")  // Debug print
                     }
-                    
-                    // Action Bar Overlay
-                    if let activeId = activeTextId, !isTyping,
-                       let activeOverlay = currentEntry.textOverlays.first(where: { $0.id == activeId }) {
-                        TextFieldActionsBar(
-                            viewModel: viewModel,
-                            overlayId: activeId,
-                            fontSize: .constant(activeOverlay.style.fontSize),
-                            selectedFont: .constant(activeOverlay.style.fontStyle),
-                            textColor: .constant(activeOverlay.color),
-                            activeTextId: $activeTextId
-                        )
-                        .position(
-                            x: activeOverlay.position.x,
-                            y: max(50, activeOverlay.position.y - 60) // Position above text
-                        )
-                    }
+                
+                // Text overlays layer in a fixed size container
+                ForEach(currentEntry.textOverlays) { overlay in
+                    EditableTextOverlay(
+                        viewModel: viewModel,
+                        overlay: overlay,
+                        containerWidth: containerWidth,
+                        activeTextId: $activeTextId,
+                        isTyping: $isTyping
+                    )
                 }
-                .frame(width: containerWidth)
-                .frame(height: UIScreen.main.bounds.height * 0.7)
-                .padding(.horizontal, 16)
                 
                 // Drawing paths layer
                 ForEach(currentEntry.drawingPaths) { path in
@@ -96,7 +75,7 @@ struct PhotoCanvasView: View {
                     .stroke(viewModel.selectedColor, lineWidth: 3)
                 }
                 
-                // Footer overlay - position it inside the photo's bounds
+                // Footer overlay
                 FooterView(
                     viewModel: viewModel,
                     activeTextId: $activeTextId,
@@ -108,7 +87,15 @@ struct PhotoCanvasView: View {
             }
         }
         .frame(height: UIScreen.main.bounds.height * 0.7)
-        .contentShape(Rectangle())
+        .contentShape(Rectangle())  // Make entire area tappable
+        .onTapGesture {
+            // Only handle taps if we're not in drawing mode
+            if !viewModel.isDrawing {
+                // Deselect active text field and exit typing mode
+                activeTextId = nil
+                isTyping = false
+            }
+        }
         .gesture(
             viewModel.isDrawing ?
             DragGesture(minimumDistance: 0)
@@ -128,20 +115,7 @@ struct PhotoCanvasView: View {
                 }
             : nil
         )
-        .onTapGesture {
-            if isTyping && activeTextId != nil {
-                viewModel.updateTextOverlay(
-                    id: activeTextId!,
-                    text: viewModel.currentEntry?.textOverlays.first(where: { $0.id == activeTextId })?.text ?? ""
-                )
-                isTyping = false
-            }
-            activeTextId = nil
-        }
-        .onPreferenceChange(FramePreferenceKey.self) { frame in
-            viewModel.photoFrame = frame
-        }
-        .coordinateSpace(name: "photoCanvas") // Add named coordinate space
+        .coordinateSpace(name: "photoCanvas")
     }
 }
 
