@@ -90,7 +90,7 @@ class DiaryViewModel: ObservableObject {
             text: "Enter text",
             position: centerPosition,
             style: Models.TextStyle(),
-            color: .black,
+            color: .white,
             width: 200
         )
         
@@ -136,6 +136,7 @@ class DiaryViewModel: ObservableObject {
         id: UUID, 
         fontSize: CGFloat? = nil, 
         fontStyle: Models.FontStyle? = nil,
+        fontFamily: Models.FontFamily? = nil,
         color: Color? = nil
     ) {
         guard var entry = currentEntry else { return }
@@ -146,6 +147,9 @@ class DiaryViewModel: ObservableObject {
             }
             if let newStyle = fontStyle {
                 entry.textOverlays[index].style.fontStyle = newStyle
+            }
+            if let newFamily = fontFamily {
+                entry.textOverlays[index].style.fontFamily = newFamily
             }
             if let newColor = color {
                 entry.textOverlays[index].color = newColor

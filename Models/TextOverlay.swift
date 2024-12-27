@@ -8,13 +8,35 @@
 import SwiftUI
 
 public extension Models {
+    enum FontFamily: String, CaseIterable {
+        case arial = "Arial"
+        case timesNewRoman = "Times New Roman"
+        case courier = "Courier" // Monospace
+        case snellRoundhand = "SnellRoundhand" // Elegant cursive font
+        
+        var fontName: String {
+            switch self {
+            case .arial:
+                return "ArialMT"
+            case .timesNewRoman:
+                return "Times New Roman"
+            case .courier:
+                return "Courier"
+            case .snellRoundhand:
+                return "SnellRoundhand"
+            }
+        }
+    }
+    
     struct TextStyle {
         var fontSize: CGFloat
         var fontStyle: FontStyle
+        var fontFamily: FontFamily
         
-        init(fontSize: CGFloat = 24, fontStyle: FontStyle = .regular) {
+        init(fontSize: CGFloat = 24, fontStyle: FontStyle = .regular, fontFamily: FontFamily = .arial) {
             self.fontSize = fontSize
             self.fontStyle = fontStyle
+            self.fontFamily = fontFamily
         }
     }
     

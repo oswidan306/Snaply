@@ -24,6 +24,7 @@ struct EditableTextOverlay: View {
     @State private var lastTapTime: Date = Date()
     private let doubleTapInterval: TimeInterval = 0.3
     @State private var textHeight: CGFloat = 0
+    @State private var selectedFontFamily: Models.FontFamily
     
     // Add a namespace for our coordinate space
     private let photoCanvasSpace = "photoCanvas"
@@ -45,10 +46,11 @@ struct EditableTextOverlay: View {
         self._editingText = State(initialValue: overlay.text)
         self._fontSize = State(initialValue: overlay.style.fontSize)
         self._selectedFont = State(initialValue: overlay.style.fontStyle)
-        self._textColor = State(initialValue: overlay.color)
+        self._textColor = State(initialValue: overlay.color == .black ? .white : overlay.color)
         
         // Initialize position with the overlay's stored position
         self._position = State(initialValue: overlay.position)
+        self._selectedFontFamily = State(initialValue: overlay.style.fontFamily)
     }
     
     private var absolutePosition: CGPoint {
@@ -102,15 +104,26 @@ struct EditableTextOverlay: View {
         )
     }
     
+    private func fontFor(_ family: Models.FontFamily) -> Font {
+        let baseFont = Font.custom(family.fontName, size: fontSize)
+        
+        switch selectedFont {
+        case .bold:
+            return baseFont.bold()
+        case .italic:
+            return baseFont.italic()
+        default:
+            return baseFont
+        }
+    }
+    
     var body: some View {
         ZStack(alignment: .top) {
             // Main text content
             ZStack {
                 if isTyping {
                     TextField("Enter text", text: $editingText, axis: .vertical)
-                        .font(selectedFont == .regular ? .system(size: fontSize) :
-                                selectedFont == .bold ? .system(size: fontSize, weight: .bold) :
-                                    .system(size: fontSize).italic())
+                        .font(fontFor(selectedFontFamily))
                         .foregroundColor(textColor)
                         .multilineTextAlignment(.center)
                         .lineLimit(5)
@@ -128,12 +141,11 @@ struct EditableTextOverlay: View {
                         )
                 } else {
                     Text(editingText)
-                        .font(selectedFont == .regular ? .system(size: fontSize) :
-                                selectedFont == .bold ? .system(size: fontSize, weight: .bold) :
-                                    .system(size: fontSize).italic())
+                        .font(fontFor(selectedFontFamily))
                         .foregroundColor(textColor)
                         .multilineTextAlignment(.center)
                         .lineLimit(5)
+                        .lineSpacing(8)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(width: overlay.width)
                         .background(
@@ -169,7 +181,43 @@ struct EditableTextOverlay: View {
                     FontSizeControls(fontSize: $fontSize)
                     
                     // Font style controls
-                    FontStyleControls(fontStyle: $selectedFont)
+                    Button(action: { 
+                        selectedFont = .bold 
+                        viewModel.updateTextOverlayStyle(id: overlay.id, fontStyle: .bold)
+                    }) {
+                        Image(systemName: "bold")
+                            .foregroundColor(selectedFont == .bold ? .blue : .black)
+                    }
+                    
+                    Button(action: { 
+                        selectedFont = .italic
+                        viewModel.updateTextOverlayStyle(id: overlay.id, fontStyle: .italic)
+                    }) {
+                        Image(systemName: "italic")
+                            .foregroundColor(selectedFont == .italic ? .blue : .black)
+                    }
+                    
+                    // Font family picker
+                    Menu {
+                        ForEach(Models.FontFamily.allCases, id: \.self) { family in
+                            Button(action: {
+                                selectedFontFamily = family
+                                viewModel.updateTextOverlayStyle(
+                                    id: overlay.id,
+                                    fontFamily: family
+                                )
+                            }) {
+                                if selectedFontFamily == family {
+                                    Label(family.rawValue, systemImage: "checkmark")
+                                } else {
+                                    Text(family.rawValue)
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "textformat")
+                            .foregroundColor(.black)
+                    }
                     
                     // Color picker
                     ColorPicker("", selection: $textColor)
@@ -328,8 +376,9 @@ private struct FontSizeControls: View {
         } label: {
             Text("\(Int(fontSize))")
                 .font(.system(size: 14, weight: .medium))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
+                .frame(minWidth: 24) // Ensure minimum width for two digits
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
                 .background(
                     RoundedRectangle(cornerRadius: 4)
                         .stroke(Color.black.opacity(0.5), lineWidth: 1)
