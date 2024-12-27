@@ -15,6 +15,7 @@ struct PhotoCanvasView: View {
     @Binding var showingEmotionPicker: Bool
     @Binding var selectedItem: PhotosPickerItem?
     let containerWidth: CGFloat
+    @State private var activeTextFrame: CGRect = .zero
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -49,6 +50,23 @@ struct PhotoCanvasView: View {
                         .frame(width: containerWidth)
                         .frame(height: UIScreen.main.bounds.height * 0.7)
                     }
+                    
+                    // Action Bar Overlay
+                    if let activeId = activeTextId, !isTyping,
+                       let activeOverlay = currentEntry.textOverlays.first(where: { $0.id == activeId }) {
+                        TextFieldActionsBar(
+                            viewModel: viewModel,
+                            overlayId: activeId,
+                            fontSize: .constant(activeOverlay.style.fontSize),
+                            selectedFont: .constant(activeOverlay.style.fontStyle),
+                            textColor: .constant(activeOverlay.color),
+                            activeTextId: $activeTextId
+                        )
+                        .position(
+                            x: activeOverlay.position.x,
+                            y: max(50, activeOverlay.position.y - 60) // Position above text
+                        )
+                    }
                 }
                 .frame(width: containerWidth)
                 .frame(height: UIScreen.main.bounds.height * 0.7)
@@ -76,25 +94,6 @@ struct PhotoCanvasView: View {
                         }
                     }
                     .stroke(viewModel.selectedColor, lineWidth: 3)
-                }
-                
-                // Action Bar Overlay
-                if let activeId = activeTextId, !isTyping,
-                   let activeOverlay = currentEntry.textOverlays.first(where: { $0.id == activeId }) {
-                    VStack {
-                        TextFieldActionsBar(
-                            viewModel: viewModel,
-                            overlayId: activeId,
-                            fontSize: .constant(activeOverlay.style.fontSize),
-                            selectedFont: .constant(activeOverlay.style.fontStyle),
-                            textColor: .constant(activeOverlay.color),
-                            activeTextId: $activeTextId
-                        )
-                        .padding(.horizontal)
-                        .padding(.top, 8)
-                        
-                        Spacer()
-                    }
                 }
                 
                 // Footer overlay - position it inside the photo's bounds
@@ -142,6 +141,7 @@ struct PhotoCanvasView: View {
         .onPreferenceChange(FramePreferenceKey.self) { frame in
             viewModel.photoFrame = frame
         }
+        .coordinateSpace(name: "photoCanvas") // Add named coordinate space
     }
 }
 

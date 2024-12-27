@@ -40,12 +40,23 @@ struct EditableTextOverlay: View {
     }
     
     var body: some View {
-        Group {
-            if isActive && isTyping {
-                editableTextField
-            } else {
-                staticTextField
+        GeometryReader { geo in
+            ZStack {
+                if isActive && isTyping {
+                    editableTextField
+                } else {
+                    staticTextField
+                }
             }
+            .position(overlay.position)
+            .background(
+                GeometryReader { textGeo in
+                    Color.clear.preference(
+                        key: TextFieldFramePreferenceKey.self,
+                        value: textGeo.frame(in: .named("photoCanvas"))
+                    )
+                }
+            )
         }
         .offset(offset)
         .gesture(
@@ -71,7 +82,6 @@ struct EditableTextOverlay: View {
                     )
                 }
         )
-        .position(overlay.position)
     }
     
     private var editableTextField: some View {

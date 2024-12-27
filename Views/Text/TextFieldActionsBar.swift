@@ -74,12 +74,13 @@ struct TextFieldActionsBar: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color.white)
-                .shadow(radius: 4)
+                .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
         )
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: activeTextId)
     }
 }
 
