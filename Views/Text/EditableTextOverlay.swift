@@ -23,6 +23,10 @@ struct EditableTextOverlay: View {
     @State private var dragOffset: CGSize = .zero
     @State private var lastTapTime: Date = Date()
     private let doubleTapInterval: TimeInterval = 0.3
+    @State private var textHeight: CGFloat = 0
+    
+    // Add a namespace for our coordinate space
+    private let photoCanvasSpace = "photoCanvas"
     
     private var isActive: Bool {
         activeTextId == overlay.id
@@ -53,19 +57,40 @@ struct EditableTextOverlay: View {
             print("Warning: Invalid photo frame: \(frame)")
             return .zero
         }
-        let pos = viewModel.convertToAbsolutePosition(position, in: frame)
-        print("Converting relative pos \(position) to absolute pos \(pos) in frame \(frame)")
+        
+        // Convert relative position to absolute
+        var pos = viewModel.convertToAbsolutePosition(position, in: frame)
+        
+        // Apply constraints immediately to prevent out-of-bounds positions
+        let halfWidth = overlay.width / 2
+        let halfHeight = textHeight / 2
+        
+        // Constrain X position
+        pos.x = min(
+            frame.maxX - halfWidth,
+            max(frame.minX + halfWidth, pos.x)
+        )
+        
+        // Constrain Y position
+        pos.y = min(
+            frame.maxY - halfHeight,
+            max(frame.minY + halfHeight, pos.y)
+        )
+        
         return pos
     }
     
     private func constrainPosition(_ proposedAbsolutePosition: CGPoint, in frame: CGRect) -> CGPoint {
+        let halfHeight = textHeight / 2
         let halfWidth = overlay.width / 2
-        let halfHeight = fontSize * 1.5 / 2
         
+        // Constrain X position
         let constrainedX = min(
             frame.maxX - halfWidth,
             max(frame.minX + halfWidth, proposedAbsolutePosition.x)
         )
+        
+        // Constrain Y position
         let constrainedY = min(
             frame.maxY - halfHeight,
             max(frame.minY + halfHeight, proposedAbsolutePosition.y)
@@ -82,14 +107,25 @@ struct EditableTextOverlay: View {
             // Main text content
             ZStack {
                 if isTyping {
-                    TextField("Enter text", text: $editingText)
+                    TextField("Enter text", text: $editingText, axis: .vertical)
                         .font(selectedFont == .regular ? .system(size: fontSize) :
                                 selectedFont == .bold ? .system(size: fontSize, weight: .bold) :
                                     .system(size: fontSize).italic())
                         .foregroundColor(textColor)
                         .multilineTextAlignment(.center)
+                        .lineLimit(5)
                         .frame(width: overlay.width)
                         .focused($isFocused)
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear.onAppear {
+                                    textHeight = geo.size.height
+                                }
+                                .onChange(of: geo.size.height) { newHeight in
+                                    textHeight = newHeight
+                                }
+                            }
+                        )
                 } else {
                     Text(editingText)
                         .font(selectedFont == .regular ? .system(size: fontSize) :
@@ -97,7 +133,19 @@ struct EditableTextOverlay: View {
                                     .system(size: fontSize).italic())
                         .foregroundColor(textColor)
                         .multilineTextAlignment(.center)
+                        .lineLimit(5)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(width: overlay.width)
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear.onAppear {
+                                    textHeight = geo.size.height
+                                }
+                                .onChange(of: geo.size.height) { newHeight in
+                                    textHeight = newHeight
+                                }
+                            }
+                        )
                 }
             }
             .background(
@@ -117,7 +165,7 @@ struct EditableTextOverlay: View {
             // Actions Bar (only show when active and not typing)
             if isActive && !isTyping {
                 HStack(spacing: 12) {
-                    // Font size controls
+                    // Font size control
                     FontSizeControls(fontSize: $fontSize)
                     
                     // Font style controls
@@ -138,21 +186,22 @@ struct EditableTextOverlay: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)
+                .frame(width: 200)  // Fixed width for action bar
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color.white)
                         .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                 )
-                .offset(y: -50)  // Move above the text field
+                .position(x: overlay.width / 2, y: -25)  // Center above text field
             }
         }
-        .frame(width: overlay.width, height: fontSize * 1.5)
+        .frame(width: overlay.width, height: textHeight)
         .position(
             x: absolutePosition.x + dragOffset.width,
             y: absolutePosition.y + dragOffset.height
         )
         .gesture(
-            DragGesture(minimumDistance: 3)
+            DragGesture(coordinateSpace: .named(photoCanvasSpace)) // Specify coordinate space
                 .onChanged { value in
                     if isActive && !isTyping {
                         dragOffset = value.translation
@@ -166,26 +215,22 @@ struct EditableTextOverlay: View {
                             return
                         }
                         
-                        let finalAbsolutePosition = CGPoint(
+                        let proposedAbsolutePosition = CGPoint(
                             x: absolutePosition.x + value.translation.width,
                             y: absolutePosition.y + value.translation.height
                         )
                         
-                        // Convert the final position to relative coordinates
-                        let finalRelativePosition = viewModel.convertToRelativePosition(finalAbsolutePosition, in: frame)
-                        
-                        print("Drag ended: translation: \(value.translation)")
-                        print("Final absolute position: \(finalAbsolutePosition)")
-                        print("Final relative position: \(finalRelativePosition)")
+                        // Constrain the position within bounds
+                        let constrainedRelativePosition = constrainPosition(proposedAbsolutePosition, in: frame)
                         
                         // Update the local position and clear drag offset
-                        position = finalRelativePosition
+                        position = constrainedRelativePosition
                         dragOffset = .zero
                         
                         // Update the view model with the new position
                         viewModel.updateTextOverlay(
                             id: overlay.id,
-                            position: finalRelativePosition
+                            position: constrainedRelativePosition
                         )
                     }
                 }
@@ -267,17 +312,28 @@ private struct ResizeHandles: View {
 // Helper Views for the action bar
 private struct FontSizeControls: View {
     @Binding var fontSize: CGFloat
+    private let fontSizes: [CGFloat] = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64]
     
     var body: some View {
-        HStack {
-            Button(action: { fontSize = max(12, fontSize - 2) }) {
-                Image(systemName: "textformat.size.smaller")
-                    .foregroundColor(.black)
+        Menu {
+            ForEach(fontSizes, id: \.self) { size in
+                Button(action: { fontSize = size }) {
+                    if fontSize == size {
+                        Label("\(Int(size))pt", systemImage: "checkmark")
+                    } else {
+                        Text("\(Int(size))pt")
+                    }
+                }
             }
-            Button(action: { fontSize = min(72, fontSize + 2) }) {
-                Image(systemName: "textformat.size.larger")
-                    .foregroundColor(.black)
-            }
+        } label: {
+            Text("\(Int(fontSize))")
+                .font(.system(size: 14, weight: .medium))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(Color.black.opacity(0.5), lineWidth: 1)
+                )
         }
     }
 }

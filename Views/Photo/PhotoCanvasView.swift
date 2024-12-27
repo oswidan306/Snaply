@@ -31,7 +31,7 @@ struct PhotoCanvasView: View {
                         GeometryReader { geo in
                             Color.clear.preference(
                                 key: FramePreferenceKey.self,
-                                value: geo.frame(in: .local)
+                                value: geo.frame(in: .named("photoCanvas"))
                             )
                         }
                     )
