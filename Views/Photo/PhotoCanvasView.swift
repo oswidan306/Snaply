@@ -13,74 +13,89 @@ struct PhotoCanvasView: View {
     @ObservedObject var viewModel: DiaryViewModel
     @Binding var activeTextId: UUID?
     @Binding var isTyping: Bool
-    @Binding var showingEmotionPicker: Bool
     @Binding var selectedItem: PhotosPickerItem?
     let containerWidth: CGFloat
     
     var body: some View {
         ZStack(alignment: .bottom) {
             if let currentEntry = viewModel.currentEntry {
-                // Base photo layer with fixed height
-                Image(uiImage: currentEntry.photo)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: containerWidth)
-                    .frame(height: UIScreen.main.bounds.height * 0.7)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .background(
-                        GeometryReader { geo in
-                            Color.clear.preference(
-                                key: FramePreferenceKey.self,
-                                value: geo.frame(in: .named("photoCanvas"))
+                // Container for both photo and diary
+                ZStack {
+                    // Photo side
+                    ZStack {
+                        Image(uiImage: currentEntry.photo)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: containerWidth)
+                            .frame(height: UIScreen.main.bounds.height * 0.7)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .background(
+                                GeometryReader { geo in
+                                    Color.clear.preference(
+                                        key: FramePreferenceKey.self,
+                                        value: geo.frame(in: .named("photoCanvas"))
+                                    )
+                                }
+                            )
+                            .onPreferenceChange(FramePreferenceKey.self) { frame in
+                                viewModel.photoFrame = frame
+                                print("Photo frame updated: \(frame)")  // Debug print
+                            }
+                        
+                        // Text overlays layer
+                        ForEach(currentEntry.textOverlays) { overlay in
+                            EditableTextOverlay(
+                                viewModel: viewModel,
+                                overlay: overlay,
+                                containerWidth: containerWidth,
+                                activeTextId: $activeTextId,
+                                isTyping: $isTyping
                             )
                         }
-                    )
-                    .onPreferenceChange(FramePreferenceKey.self) { frame in
-                        viewModel.photoFrame = frame
-                        print("Photo frame updated: \(frame)")  // Debug print
+                        
+                        // Drawing paths layer
+                        ForEach(currentEntry.drawingPaths) { path in
+                            Path { p in
+                                guard let first = path.points.first else { return }
+                                p.move(to: first)
+                                for point in path.points.dropFirst() {
+                                    p.addLine(to: point)
+                                }
+                            }
+                            .stroke(path.color, lineWidth: path.lineWidth)
+                        }
+                        
+                        // Current drawing path
+                        if viewModel.isDrawing, let currentLine = viewModel.currentLine {
+                            Path { path in
+                                guard let first = currentLine.points.first else { return }
+                                path.move(to: first)
+                                for point in currentLine.points.dropFirst() {
+                                    path.addLine(to: point)
+                                }
+                            }
+                            .stroke(viewModel.selectedColor, lineWidth: 3)
+                        }
                     }
-                
-                // Text overlays layer in a fixed size container
-                ForEach(currentEntry.textOverlays) { overlay in
-                    EditableTextOverlay(
+                    .opacity(viewModel.isShowingDiary ? 0 : 1)
+                    
+                    // Diary side
+                    DiaryEntryView(
                         viewModel: viewModel,
-                        overlay: overlay,
-                        containerWidth: containerWidth,
-                        activeTextId: $activeTextId,
-                        isTyping: $isTyping
+                        containerWidth: containerWidth
                     )
+                    .opacity(viewModel.isShowingDiary ? 1 : 0)
                 }
+                .rotation3DEffect(
+                    .degrees(viewModel.isShowingDiary ? 180 : 0),
+                    axis: (x: 0.0, y: 1.0, z: 0.0)
+                )
                 
-                // Drawing paths layer
-                ForEach(currentEntry.drawingPaths) { path in
-                    Path { p in
-                        guard let first = path.points.first else { return }
-                        p.move(to: first)
-                        for point in path.points.dropFirst() {
-                            p.addLine(to: point)
-                        }
-                    }
-                    .stroke(path.color, lineWidth: path.lineWidth)
-                }
-                
-                // Current drawing path if in drawing mode
-                if viewModel.isDrawing, let currentLine = viewModel.currentLine {
-                    Path { path in
-                        guard let first = currentLine.points.first else { return }
-                        path.move(to: first)
-                        for point in currentLine.points.dropFirst() {
-                            path.addLine(to: point)
-                        }
-                    }
-                    .stroke(viewModel.selectedColor, lineWidth: 3)
-                }
-                
-                // Footer overlay
+                // Footer overlay (outside the flipping container)
                 FooterView(
                     viewModel: viewModel,
                     activeTextId: $activeTextId,
                     isTyping: $isTyping,
-                    showingEmotionPicker: $showingEmotionPicker,
                     selectedItem: $selectedItem
                 )
                 .padding(.horizontal, 16)

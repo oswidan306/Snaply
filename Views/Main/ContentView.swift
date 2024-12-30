@@ -15,7 +15,6 @@ struct ContentView: View {
     @State private var selectedItem: PhotosPickerItem?
     @State private var activeTextId: UUID?
     @State private var isTyping: Bool = false
-    @State private var showingEmotionPicker = false
     @State private var isDraggingUp = false
     
     init(containerWidth: CGFloat) {
@@ -47,7 +46,6 @@ struct ContentView: View {
                                         viewModel: viewModel,
                                         activeTextId: $activeTextId,
                                         isTyping: $isTyping,
-                                        showingEmotionPicker: $showingEmotionPicker,
                                         selectedItem: $selectedItem,
                                         containerWidth: contentWidth
                                     )
@@ -117,7 +115,7 @@ struct ContentView: View {
                     }
             )
         }
-        .onChange(of: selectedItem) { newItem in
+        .onChange(of: selectedItem) { oldItem, newItem in
             if let item = newItem {
                 loadImage(from: item)
             }
@@ -129,7 +127,11 @@ struct ContentView: View {
             if let imageData = try? await item.loadTransferable(type: Data.self),
                let uiImage = UIImage(data: imageData) {
                 await MainActor.run {
-                    viewModel.addNewPhoto(uiImage)
+                    if viewModel.currentEntry != nil {
+                        viewModel.replaceCurrentPhoto(uiImage)
+                    } else {
+                        viewModel.addNewPhoto(uiImage)
+                    }
                 }
             }
             await MainActor.run {

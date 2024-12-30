@@ -5,7 +5,11 @@ struct UndoButton: View {
     
     var body: some View {
         Button(action: {
-            viewModel.undo()
+            if viewModel.isShowingDiary {
+                viewModel.toggleDiary()
+            } else {
+                viewModel.undo()
+            }
         }) {
             Image(systemName: "arrow.uturn.backward")
                 .resizable()
@@ -18,7 +22,7 @@ struct UndoButton: View {
                         .fill(Color.black.opacity(0.3))
                 )
         }
-        .disabled(!viewModel.hasEdits())
+        .disabled(!viewModel.hasEdits() && !viewModel.isShowingDiary)
     }
 }
 

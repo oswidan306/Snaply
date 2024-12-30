@@ -14,6 +14,7 @@ public extension Models {
         public var textOverlays: [TextOverlay]
         public var drawingPaths: [DrawingPath]
         public var emotions: [String]
+        public var diaryText: String
         private var history: [(textOverlays: [TextOverlay], drawingPaths: [DrawingPath])]
         
         public init(
@@ -21,13 +22,15 @@ public extension Models {
             photo: UIImage,
             textOverlays: [TextOverlay] = [],
             drawingPaths: [DrawingPath] = [],
-            emotions: [String] = []
+            emotions: [String] = [],
+            diaryText: String = ""
         ) {
             self.id = id
             self.photo = photo
             self.textOverlays = textOverlays
             self.drawingPaths = drawingPaths
             self.emotions = emotions
+            self.diaryText = diaryText
             self.history = []
         }
         

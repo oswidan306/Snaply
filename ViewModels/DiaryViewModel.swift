@@ -22,6 +22,8 @@ class DiaryViewModel: ObservableObject {
     @Published var currentLine: Models.DrawingPath?
     @Published var drawingPaths: [Models.DrawingPath] = []
     @Published var selectedColor: Color = .white
+    @Published var isShowingEmotionPicker: Bool = false
+    @Published var isShowingDiary: Bool = false
     @Published var emotions: [Emotion] = [
         Emotion(name: "Joy", emoji: "😊"),
         Emotion(name: "Love", emoji: "❤️"),
@@ -54,8 +56,12 @@ class DiaryViewModel: ObservableObject {
     // MARK: - Photo Management
     
     func addNewPhoto(_ image: UIImage) {
+        let previousDiaryText = currentEntry?.diaryText ?? ""
         emotions.indices.forEach { emotions[$0].isSelected = false }
-        let newEntry = Models.PhotoEntry(photo: image)
+        let newEntry = Models.PhotoEntry(
+            photo: image,
+            diaryText: previousDiaryText
+        )
         currentEntry = newEntry
         entries.append(newEntry)
     }
@@ -72,6 +78,21 @@ class DiaryViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func replaceCurrentPhoto(_ image: UIImage) {
+        guard var entry = currentEntry else { return }
+        let newEntry = Models.PhotoEntry(
+            photo: image,
+            textOverlays: entry.textOverlays,
+            drawingPaths: entry.drawingPaths,
+            emotions: entry.emotions,
+            diaryText: entry.diaryText
+        )
+        if let index = entries.firstIndex(where: { $0.id == entry.id }) {
+            entries[index] = newEntry
+        }
+        currentEntry = newEntry
     }
     
     // MARK: - Text Overlay Management
@@ -285,6 +306,26 @@ class DiaryViewModel: ObservableObject {
         guard var entry = currentEntry else { return }
         entry.saveState()
         updateEntry(entry)
+    }
+    
+    func updateDiaryText(_ text: String) {
+        guard var entry = currentEntry else { return }
+        entry.diaryText = text
+        updateEntry(entry)
+    }
+    
+    func toggleDiary() {
+        withAnimation(.easeInOut(duration: 0.6)) {
+            isShowingDiary.toggle()
+        }
+    }
+    
+    func toggleEmotionPicker() {
+        isShowingEmotionPicker.toggle()
+        if isShowingEmotionPicker {
+            isDrawing = false
+            isShowingDiary = false
+        }
     }
 }
 

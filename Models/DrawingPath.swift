@@ -8,7 +8,7 @@
 import SwiftUI
 
 public extension Models {
-    public struct DrawingPath: Identifiable {
+    struct DrawingPath: Identifiable {
         public let id: UUID
         public var points: [CGPoint]
         public var color: Color

@@ -12,7 +12,6 @@ struct FooterView: View {
     @ObservedObject var viewModel: DiaryViewModel
     @Binding var activeTextId: UUID?
     @Binding var isTyping: Bool
-    @Binding var showingEmotionPicker: Bool
     @Binding var selectedItem: PhotosPickerItem?
     @State private var textButtonTapped = false
     
@@ -20,7 +19,7 @@ struct FooterView: View {
         VStack(spacing: 16) {
             if viewModel.currentEntry != nil {
                 // Color picker for drawing mode - only show when not actively drawing
-                if viewModel.isDrawing && viewModel.currentLine == nil {
+                if viewModel.isDrawing && viewModel.currentLine == nil && !viewModel.isShowingDiary {
                     ColorSelectorView(viewModel: viewModel)
                         .padding(.bottom, 4)
                 }
@@ -37,11 +36,24 @@ struct FooterView: View {
                     Spacer()
                     
                     Button(action: {
-                        viewModel.isDrawing = false
-                        viewModel.addTextOverlay()
-                        textButtonTapped = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            textButtonTapped = false
+                        if viewModel.isShowingDiary {
+                            viewModel.toggleDiary()
+                            // Wait for animation to complete before adding text
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                viewModel.isDrawing = false
+                                viewModel.addTextOverlay()
+                                textButtonTapped = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    textButtonTapped = false
+                                }
+                            }
+                        } else {
+                            viewModel.isDrawing = false
+                            viewModel.addTextOverlay()
+                            textButtonTapped = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                textButtonTapped = false
+                            }
                         }
                     }) {
                         Image("text_icon")
@@ -54,10 +66,22 @@ struct FooterView: View {
                     Spacer()
                     
                     Button(action: {
-                        viewModel.isDrawing.toggle()
-                        if viewModel.isDrawing {
-                            isTyping = false
-                            activeTextId = nil
+                        if viewModel.isShowingDiary {
+                            viewModel.toggleDiary()
+                            // Wait for animation to complete before toggling drawing
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                viewModel.isDrawing.toggle()
+                                if viewModel.isDrawing {
+                                    isTyping = false
+                                    activeTextId = nil
+                                }
+                            }
+                        } else {
+                            viewModel.isDrawing.toggle()
+                            if viewModel.isDrawing {
+                                isTyping = false
+                                activeTextId = nil
+                            }
                         }
                     }) {
                         Image("scribble_icon")
@@ -70,26 +94,41 @@ struct FooterView: View {
                     Spacer()
                     
                     Button(action: {
-                        showingEmotionPicker.toggle()
-                        if showingEmotionPicker {
-                            viewModel.isDrawing = false
-                        }
+                        viewModel.toggleDiary()
                     }) {
                         Image("note_icon")
                             .renderingMode(.template)
                             .resizable()
                     }
-                    .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false), isActive: showingEmotionPicker))
+                    .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false), isActive: viewModel.isShowingDiary))
                     .disabled(viewModel.currentEntry == nil)
                     
                     Spacer()
                     
-                    PhotosPicker(selection: $selectedItem) {
-                        Image("replace_icon")
-                            .renderingMode(.template)
-                            .resizable()
+                    if viewModel.isShowingDiary {
+                        Button(action: {
+                            viewModel.toggleDiary()
+                            // Wait for flip animation to complete before showing picker
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                // Programmatically trigger the photo picker
+                                Task { @MainActor in
+                                    selectedItem = nil
+                                }
+                            }
+                        }) {
+                            Image("replace_icon")
+                                .renderingMode(.template)
+                                .resizable()
+                        }
+                        .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false)))
+                    } else {
+                        PhotosPicker(selection: $selectedItem) {
+                            Image("replace_icon")
+                                .renderingMode(.template)
+                                .resizable()
+                        }
+                        .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false)))
                     }
-                    .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false)))
                 }
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity)

@@ -295,16 +295,16 @@ struct EditableTextOverlay: View {
             isTyping = true
             isFocused = true
         }
-        .onChange(of: editingText) { newValue in
+        .onChange(of: editingText) { oldValue, newValue in
             viewModel.updateTextOverlay(
                 id: overlay.id,
                 text: newValue
             )
         }
-        .onChange(of: isTyping) { newValue in
+        .onChange(of: isTyping) { oldValue, newValue in
             isFocused = newValue
         }
-        .onChange(of: overlay.position) { newPosition in
+        .onChange(of: overlay.position) { oldPosition, newPosition in
             position = newPosition
         }
     }
