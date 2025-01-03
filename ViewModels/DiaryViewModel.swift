@@ -314,6 +314,12 @@ class DiaryViewModel: ObservableObject {
         updateEntry(entry)
     }
     
+    func updateDiaryTitle(_ title: String) {
+        guard var entry = currentEntry else { return }
+        entry.diaryTitle = title
+        updateEntry(entry)
+    }
+    
     func toggleDiary() {
         withAnimation(.easeInOut(duration: 0.6)) {
             isShowingDiary.toggle()
