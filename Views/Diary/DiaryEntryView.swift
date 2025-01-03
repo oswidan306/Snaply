@@ -17,7 +17,7 @@ struct DiaryEntryView: View {
                 font: .system(size: fontSize + 4, weight: .medium)
             )
             .padding(.horizontal)
-            .padding(.top, 20)
+            .padding(.top, 16)
             
             // Main diary text
             TextEditor(text: Binding(
@@ -25,8 +25,10 @@ struct DiaryEntryView: View {
                 set: { viewModel.updateDiaryText($0) }
             ))
             .font(.system(size: fontSize))
+            .foregroundColor(.gray.opacity(0.96))
             .lineSpacing((fontSize * 1.2) - (fontSize * 1.33))
-            .padding()
+            .padding(.horizontal)
+            .padding(.top, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(width: containerWidth)

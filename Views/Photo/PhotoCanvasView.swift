@@ -23,6 +23,7 @@ struct PhotoCanvasView: View {
                 ZStack {
                     // Photo side
                     ZStack {
+                        // Photo layer
                         Image(uiImage: currentEntry.photo)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -39,8 +40,52 @@ struct PhotoCanvasView: View {
                             )
                             .onPreferenceChange(FramePreferenceKey.self) { frame in
                                 viewModel.photoFrame = frame
-                                print("Photo frame updated: \(frame)")  // Debug print
+                                print("Photo frame updated: \(frame)")
                             }
+                            .overlay(
+                                // Top action buttons overlay
+                                HStack(spacing: 0) {
+                                    if viewModel.hasEdits() {
+                                        Button(action: {
+                                            if viewModel.isShowingDiary {
+                                                viewModel.toggleDiary()
+                                            } else {
+                                                viewModel.undo()
+                                            }
+                                        }) {
+                                            Circle()
+                                                .fill(.white)
+                                                .frame(width: 32, height: 32)
+                                                .overlay(
+                                                    Image(systemName: "arrow.uturn.backward")
+                                                        .resizable()
+                                                        .frame(width: 16, height: 16)
+                                                        .foregroundColor(.black)
+                                                )
+                                                .contentShape(Rectangle())
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    PhotosPicker(selection: $selectedItem) {
+                                        Circle()
+                                            .fill(.white)
+                                            .frame(width: 32, height: 32)
+                                            .overlay(
+                                                Image("replace_icon")
+                                                    .renderingMode(.template)
+                                                    .resizable()
+                                                    .frame(width: 16, height: 16)
+                                                    .foregroundColor(.black)
+                                            )
+                                            .contentShape(Rectangle())
+                                    }
+                                }
+                                .padding(.all, 16)
+                                .allowsHitTesting(!viewModel.isShowingDiary),
+                                alignment: .top
+                            )
                         
                         // Text overlays layer
                         ForEach(currentEntry.textOverlays) { overlay in

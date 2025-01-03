@@ -25,16 +25,7 @@ struct FooterView: View {
                 }
                 
                 // All action buttons in a single HStack
-                HStack(spacing: 0) {
-                    if viewModel.hasEdits() {
-                        UndoButton(viewModel: viewModel)
-                            .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false)))
-                    } else {
-                        Color.clear.frame(width: 48, height: 44)
-                    }
-                    
-                    Spacer()
-                    
+                HStack(spacing: 32) {
                     Button(action: {
                         if viewModel.isShowingDiary {
                             viewModel.toggleDiary()
@@ -63,8 +54,6 @@ struct FooterView: View {
                     .buttonStyle(FlashingButtonStyle(isFlashing: $textButtonTapped))
                     .disabled(viewModel.currentEntry == nil)
                     
-                    Spacer()
-                    
                     Button(action: {
                         if viewModel.isShowingDiary {
                             viewModel.toggleDiary()
@@ -91,8 +80,6 @@ struct FooterView: View {
                     .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false), isActive: viewModel.isDrawing))
                     .disabled(viewModel.currentEntry == nil)
                     
-                    Spacer()
-                    
                     Button(action: {
                         viewModel.toggleDiary()
                     }) {
@@ -102,36 +89,8 @@ struct FooterView: View {
                     }
                     .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false), isActive: viewModel.isShowingDiary))
                     .disabled(viewModel.currentEntry == nil)
-                    
-                    Spacer()
-                    
-                    if viewModel.isShowingDiary {
-                        Button(action: {
-                            viewModel.toggleDiary()
-                            // Wait for flip animation to complete before showing picker
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                // Programmatically trigger the photo picker
-                                Task { @MainActor in
-                                    selectedItem = nil
-                                }
-                            }
-                        }) {
-                            Image("replace_icon")
-                                .renderingMode(.template)
-                                .resizable()
-                        }
-                        .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false)))
-                    } else {
-                        PhotosPicker(selection: $selectedItem) {
-                            Image("replace_icon")
-                                .renderingMode(.template)
-                                .resizable()
-                        }
-                        .buttonStyle(FlashingButtonStyle(isFlashing: .constant(false)))
-                    }
                 }
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, alignment: .center)
             } else {
                 // Show Past button when no image is selected
                 PastButton {
