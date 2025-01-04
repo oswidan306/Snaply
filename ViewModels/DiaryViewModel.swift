@@ -335,9 +335,7 @@ class DiaryViewModel: ObservableObject {
     func toggleEmotionPicker() {
         withAnimation {
             isShowingEmotionPicker.toggle()
-            if isShowingEmotionPicker {
-                isDrawing = false
-            }
+            isDrawing = false  // Always disable drawing when toggling emotions
         }
     }
 }

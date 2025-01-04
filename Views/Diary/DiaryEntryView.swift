@@ -35,6 +35,13 @@ struct DiaryEntryView: View {
                 }
                 .padding(.horizontal)
                 .padding(.top, 20)
+                .overlay(
+                    VStack {
+                        Spacer()
+                        Divider()
+                            .background(Color.gray.opacity(0.15))
+                    }
+                )
                 
                 // Selected emotions (emoji only)
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -42,16 +49,13 @@ struct DiaryEntryView: View {
                         ForEach(viewModel.emotions.filter { $0.isSelected }) { emotion in
                             Text(emotion.emoji)
                                 .font(.system(size: 20))  // Adjust emoji size as needed
-                                .onTapGesture {
-                                    viewModel.toggleEmotion(emotion)
-                                }
                         }
                     }
                 }
                 .padding(.horizontal)
                 
-                // Emotion picker overlay (when active and less than 3 selected)
-                if viewModel.isShowingEmotionPicker && viewModel.selectedEmotionsCount < 3 {
+                // Emotion picker overlay (when active)
+                if viewModel.isShowingEmotionPicker {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(viewModel.emotions) { emotion in
@@ -60,7 +64,7 @@ struct DiaryEntryView: View {
                                     isSelected: emotion.isSelected,
                                     action: { 
                                         viewModel.toggleEmotion(emotion)
-                                        // Auto collapse when 3 emotions are selected
+                                        // Auto close when 3 emotions are selected
                                         if viewModel.selectedEmotionsCount >= 3 {
                                             viewModel.toggleEmotionPicker()
                                         }
@@ -77,10 +81,24 @@ struct DiaryEntryView: View {
             // Scrollable content section
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
-                    TextEditor(text: Binding(
-                        get: { viewModel.currentEntry?.diaryText ?? "" },
-                        set: { viewModel.updateDiaryText($0) }
-                    ))
+                    ZStack(alignment: .topLeading) {
+                        // Placeholder text
+                        if viewModel.currentEntry?.diaryText.isEmpty ?? true {
+                            Text("Reminisce...")
+                                .foregroundColor(.gray.opacity(0.5))
+                                .font(.system(size: fontSize))
+                                .padding(.horizontal, 5)
+                                .padding(.top, 7)
+                        }
+                        
+                        // Text Editor
+                        TextEditor(text: Binding(
+                            get: { viewModel.currentEntry?.diaryText ?? "" },
+                            set: { viewModel.updateDiaryText($0) }
+                        ))
+                        .opacity(1)  // Always fully visible
+                        .background(Color.clear)
+                    }
                     .id("textEditor")
                     .font(.system(size: fontSize))
                     .foregroundColor(.gray.opacity(0.9))
@@ -89,7 +107,7 @@ struct DiaryEntryView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 12)
                     .frame(maxWidth: .infinity)
-                    .frame(height: UIScreen.main.bounds.height * 0.7 - (keyboardHeight > 0 ? 320 : 80))  // Adjust height based on keyboard
+                    .frame(height: UIScreen.main.bounds.height * 0.7 - (keyboardHeight > 0 ? 340 : 80))  // Adjust height based on keyboard
                     .background(
                         GeometryReader { geo in
                             Color.clear.preference(
@@ -187,7 +205,7 @@ struct PlaceholderTextEditor: View {
     let font: Font
     
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
             TextField(placeholder, text: $text, axis: .vertical)
                 .font(font)
                 .textFieldStyle(.plain)
@@ -195,9 +213,6 @@ struct PlaceholderTextEditor: View {
                 .padding(.horizontal, 5)
                 .frame(minHeight: 35)
                 .fixedSize(horizontal: false, vertical: true)
-            
-            Divider()
-                .background(Color.gray.opacity(0.15))
         }
     }
 }
