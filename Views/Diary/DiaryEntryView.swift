@@ -4,79 +4,124 @@ struct DiaryEntryView: View {
     @ObservedObject var viewModel: DiaryViewModel
     let containerWidth: CGFloat
     private let fontSize: CGFloat = 16
+    @Environment(\.dismiss) private var dismiss
+    @State private var keyboardHeight: CGFloat = 0
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Title and emotions row
-            HStack(spacing: 8) {
-                // Title field
-                PlaceholderTextEditor(
-                    placeholder: "Title",
-                    text: Binding(
-                        get: { viewModel.currentEntry?.diaryTitle ?? "" },
-                        set: { viewModel.updateDiaryTitle($0) }
-                    ),
-                    font: .system(size: fontSize + 4, weight: .medium)
-                )
-                
-                // Emotion picker button
-                Button(action: { viewModel.toggleEmotionPicker() }) {
-                    Image("emotions_icon")
-                        .renderingMode(.template)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 28, height: 28)
-                        .foregroundColor(.gray.opacity(0.8))
-                }
-            }
-            .padding(.horizontal)
-            .padding(.top, 20)
-            
-            // Selected emotions (emoji only, no interaction)
-            ScrollView(.horizontal, showsIndicators: false) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed header section
+            VStack(alignment: .leading, spacing: 8) {
+                // Title and emotions row
                 HStack(spacing: 8) {
-                    ForEach(viewModel.emotions.filter { $0.isSelected }) { emotion in
-                        Text(emotion.emoji)
-                            .font(.system(size: 20))
+                    // Title field
+                    PlaceholderTextEditor(
+                        placeholder: "Title",
+                        text: Binding(
+                            get: { viewModel.currentEntry?.diaryTitle ?? "" },
+                            set: { viewModel.updateDiaryTitle($0) }
+                        ),
+                        font: .system(size: fontSize + 4, weight: .medium)
+                    )
+                    
+                    // Emotion picker button
+                    Button(action: { viewModel.toggleEmotionPicker() }) {
+                        Image("emotions_icon")
+                            .renderingMode(.template)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 28, height: 28)
+                            .foregroundColor(.gray.opacity(0.8))
                     }
                 }
-            }
-            .padding(.horizontal)
-            
-            // Emotion picker overlay (when active)
-            if viewModel.isShowingEmotionPicker {
+                .padding(.horizontal)
+                .padding(.top, 20)
+                
+                // Selected emotions (emoji only)
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(viewModel.emotions) { emotion in
-                            EmotionTagView(
-                                emotion: emotion,
-                                isSelected: emotion.isSelected,
-                                action: { 
+                    HStack(spacing: 8) {
+                        ForEach(viewModel.emotions.filter { $0.isSelected }) { emotion in
+                            Text(emotion.emoji)
+                                .font(.system(size: 20))  // Adjust emoji size as needed
+                                .onTapGesture {
                                     viewModel.toggleEmotion(emotion)
-                                    // Auto collapse when 3 emotions are selected
-                                    if viewModel.selectedEmotionsCount >= 3 {
-                                        viewModel.toggleEmotionPicker()
-                                    }
                                 }
-                            )
                         }
                     }
-                    .padding(.horizontal)
                 }
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .padding(.horizontal)
+                
+                // Emotion picker overlay (when active and less than 3 selected)
+                if viewModel.isShowingEmotionPicker && viewModel.selectedEmotionsCount < 3 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(viewModel.emotions) { emotion in
+                                EmotionTagView(
+                                    emotion: emotion,
+                                    isSelected: emotion.isSelected,
+                                    action: { 
+                                        viewModel.toggleEmotion(emotion)
+                                        // Auto collapse when 3 emotions are selected
+                                        if viewModel.selectedEmotionsCount >= 3 {
+                                            viewModel.toggleEmotionPicker()
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
             }
             
-            // Main diary text
-            TextEditor(text: Binding(
-                get: { viewModel.currentEntry?.diaryText ?? "" },
-                set: { viewModel.updateDiaryText($0) }
-            ))
-            .font(.system(size: fontSize))
-            .foregroundColor(.gray.opacity(0.96))
-            .lineSpacing((fontSize * 1.2) - (fontSize * 1.33))
-            .padding(.horizontal)
-            .padding(.top, 8)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Scrollable content section
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    TextEditor(text: Binding(
+                        get: { viewModel.currentEntry?.diaryText ?? "" },
+                        set: { viewModel.updateDiaryText($0) }
+                    ))
+                    .id("textEditor")
+                    .font(.system(size: fontSize))
+                    .foregroundColor(.gray.opacity(0.9))
+                    .lineSpacing((fontSize * 1.2) - (fontSize * 1.33))
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                    .padding(.bottom, 12)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: UIScreen.main.bounds.height * 0.7 - (keyboardHeight > 0 ? 320 : 80))  // Adjust height based on keyboard
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear.preference(
+                                key: ViewOffsetKey.self,
+                                value: geo.frame(in: .named("scroll")).maxY
+                            )
+                        }
+                    )
+                }
+                .coordinateSpace(name: "scroll")
+                .onPreferenceChange(ViewOffsetKey.self) { maxY in
+                    if maxY > (UIScreen.main.bounds.height * 0.7 - 92) {
+                        withAnimation {
+                            proxy.scrollTo("textEditor", anchor: .bottom)
+                        }
+                    }
+                }
+                .overlay(
+                    VStack {
+                        Spacer()
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                .white.opacity(0),
+                                .white
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .frame(height: 92)
+                    }
+                )
+            }
         }
         .frame(width: containerWidth)
         .frame(height: UIScreen.main.bounds.height * 0.7)
@@ -87,6 +132,39 @@ struct DiaryEntryView: View {
             .degrees(180),
             axis: (x: 0.0, y: 1.0, z: 0.0)
         )
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    if value.translation.height > 50 {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
+                                                     to: nil,
+                                                     from: nil,
+                                                     for: nil)
+                    }
+                }
+        )
+        .onAppear {
+            setupKeyboardNotifications()
+        }
+        .onDisappear {
+            removeKeyboardNotifications()
+        }
+    }
+    
+    private func setupKeyboardNotifications() {
+        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
+            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                self.keyboardHeight = keyboardFrame.height
+            }
+        }
+        
+        NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
+            self.keyboardHeight = 0
+        }
+    }
+    
+    private func removeKeyboardNotifications() {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
@@ -149,5 +227,13 @@ extension Font {
             return .systemFont(ofSize: size)
         }
         return .systemFont(ofSize: 16)
+    }
+}
+
+// Add this struct for the preference key
+struct ViewOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 } 
