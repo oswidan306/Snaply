@@ -325,16 +325,19 @@ class DiaryViewModel: ObservableObject {
     }
     
     func toggleDiary() {
-        withAnimation(.easeInOut(duration: 0.6)) {
-            isShowingDiary.toggle()
+        if !isShowingEmotionPicker {
+            withAnimation(.easeInOut(duration: 0.6)) {
+                isShowingDiary.toggle()
+            }
         }
     }
     
     func toggleEmotionPicker() {
-        isShowingEmotionPicker.toggle()
-        if isShowingEmotionPicker {
-            isDrawing = false
-            isShowingDiary = false
+        withAnimation {
+            isShowingEmotionPicker.toggle()
+            if isShowingEmotionPicker {
+                isDrawing = false
+            }
         }
     }
 }

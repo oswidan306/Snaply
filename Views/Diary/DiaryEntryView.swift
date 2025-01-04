@@ -6,60 +6,65 @@ struct DiaryEntryView: View {
     private let fontSize: CGFloat = 16
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Title field
-            PlaceholderTextEditor(
-                placeholder: "Title",
-                text: Binding(
-                    get: { viewModel.currentEntry?.diaryTitle ?? "" },
-                    set: { viewModel.updateDiaryTitle($0) }
-                ),
-                font: .system(size: fontSize + 4, weight: .medium)
-            )
+        VStack(alignment: .leading, spacing: 8) {
+            // Title and emotions row
+            HStack(spacing: 8) {
+                // Title field
+                PlaceholderTextEditor(
+                    placeholder: "Title",
+                    text: Binding(
+                        get: { viewModel.currentEntry?.diaryTitle ?? "" },
+                        set: { viewModel.updateDiaryTitle($0) }
+                    ),
+                    font: .system(size: fontSize + 4, weight: .medium)
+                )
+                
+                // Emotion picker button
+                Button(action: { viewModel.toggleEmotionPicker() }) {
+                    Image("emotions_icon")
+                        .renderingMode(.template)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 28, height: 28)
+                        .foregroundColor(.gray.opacity(0.8))
+                }
+            }
             .padding(.horizontal)
             .padding(.top, 20)
             
-            // Emotions
-            ZStack(alignment: .leading) {
-                // Scrolling emotions
+            // Selected emotions (emoji only, no interaction)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(viewModel.emotions.filter { $0.isSelected }) { emotion in
+                        Text(emotion.emoji)
+                            .font(.system(size: 20))
+                    }
+                }
+            }
+            .padding(.horizontal)
+            
+            // Emotion picker overlay (when active)
+            if viewModel.isShowingEmotionPicker {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(viewModel.emotions) { emotion in
                             EmotionTagView(
                                 emotion: emotion,
                                 isSelected: emotion.isSelected,
-                                action: {
+                                action: { 
                                     viewModel.toggleEmotion(emotion)
+                                    // Auto collapse when 3 emotions are selected
+                                    if viewModel.selectedEmotionsCount >= 3 {
+                                        viewModel.toggleEmotionPicker()
+                                    }
                                 }
                             )
                         }
                     }
                     .padding(.horizontal)
-                    .frame(height: 32)
                 }
-                .frame(height: 32)
-                
-                // Left fade
-                LinearGradient(
-                    gradient: Gradient(colors: [.white, .white.opacity(0)]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: 20)
-                .allowsHitTesting(false)
-                
-                // Right fade
-                LinearGradient(
-                    gradient: Gradient(colors: [.white.opacity(0), .white]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: 20)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .allowsHitTesting(false)
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
-            .frame(height: 32)
-            .padding(.top, 12)
             
             // Main diary text
             TextEditor(text: Binding(
