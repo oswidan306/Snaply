@@ -27,12 +27,16 @@ class DiaryViewModel: ObservableObject {
     @Published var emotions: [Emotion] = [
         Emotion(name: "Joy", emoji: "😊"),
         Emotion(name: "Love", emoji: "❤️"),
-        Emotion(name: "Surprise", emoji: "😲"),
-        Emotion(name: "Fear", emoji: "😨"),
-        Emotion(name: "Anger", emoji: "😡"),
-        Emotion(name: "Sadness", emoji: "😔"),
-        Emotion(name: "Trust", emoji: "🤞"),
-        Emotion(name: "Anxious", emoji: "🤔")
+        Emotion(name: "Excited", emoji: "🤩"),
+        Emotion(name: "Peaceful", emoji: "😌"),
+        Emotion(name: "Proud", emoji: "🥹"),
+        Emotion(name: "Grateful", emoji: "🙏"),
+        Emotion(name: "Anxious", emoji: "😰"),
+        Emotion(name: "Sad", emoji: "😢"),
+        Emotion(name: "Angry", emoji: "😠"),
+        Emotion(name: "Confused", emoji: "🤔"),
+        Emotion(name: "Tired", emoji: "😮‍💨"),
+        Emotion(name: "Hopeful", emoji: "✨")
     ]
     
     let availableColors: [Color] = [

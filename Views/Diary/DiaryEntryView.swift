@@ -17,7 +17,49 @@ struct DiaryEntryView: View {
                 font: .system(size: fontSize + 4, weight: .medium)
             )
             .padding(.horizontal)
-            .padding(.top, 16)
+            .padding(.top, 20)
+            
+            // Emotions
+            ZStack(alignment: .leading) {
+                // Scrolling emotions
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(viewModel.emotions) { emotion in
+                            EmotionTagView(
+                                emotion: emotion,
+                                isSelected: emotion.isSelected,
+                                action: {
+                                    viewModel.toggleEmotion(emotion)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal)
+                    .frame(height: 32)
+                }
+                .frame(height: 32)
+                
+                // Left fade
+                LinearGradient(
+                    gradient: Gradient(colors: [.white, .white.opacity(0)]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 20)
+                .allowsHitTesting(false)
+                
+                // Right fade
+                LinearGradient(
+                    gradient: Gradient(colors: [.white.opacity(0), .white]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 20)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .allowsHitTesting(false)
+            }
+            .frame(height: 32)
+            .padding(.top, 12)
             
             // Main diary text
             TextEditor(text: Binding(
@@ -68,12 +110,11 @@ struct PlaceholderTextEditor: View {
                 .textFieldStyle(.plain)
                 .lineLimit(1...3)
                 .padding(.horizontal, 5)
-                .padding(.vertical, 8)
                 .frame(minHeight: 35)
+                .fixedSize(horizontal: false, vertical: true)
             
             Divider()
                 .background(Color.gray.opacity(0.15))
-                .padding(.horizontal, 5)
         }
     }
 }
