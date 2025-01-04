@@ -40,6 +40,7 @@ struct DiaryEntryView: View {
                         Spacer()
                         Divider()
                             .background(Color.gray.opacity(0.15))
+                            .padding(.horizontal)
                     }
                 )
                 
@@ -81,24 +82,14 @@ struct DiaryEntryView: View {
             // Scrollable content section
             ScrollViewReader { proxy in
                 ScrollView(.vertical, showsIndicators: false) {
-                    ZStack(alignment: .topLeading) {
-                        // Placeholder text
-                        if viewModel.currentEntry?.diaryText.isEmpty ?? true {
-                            Text("Reminisce...")
-                                .foregroundColor(.gray.opacity(0.5))
-                                .font(.system(size: fontSize))
-                                .padding(.horizontal, 5)
-                                .padding(.top, 7)
-                        }
-                        
-                        // Text Editor
-                        TextEditor(text: Binding(
+                    PlaceholderTextEditor2(
+                        placeholder: "Reflection",
+                        text: Binding(
                             get: { viewModel.currentEntry?.diaryText ?? "" },
                             set: { viewModel.updateDiaryText($0) }
-                        ))
-                        .opacity(1)  // Always fully visible
-                        .background(Color.clear)
-                    }
+                        ),
+                        font: .system(size: fontSize)
+                    )
                     .id("textEditor")
                     .font(.system(size: fontSize))
                     .foregroundColor(.gray.opacity(0.9))
@@ -213,6 +204,29 @@ struct PlaceholderTextEditor: View {
                 .padding(.horizontal, 5)
                 .frame(minHeight: 35)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+struct PlaceholderTextEditor2: View {
+    let placeholder: String
+    @Binding var text: String
+    let font: Font
+    
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if text.isEmpty {
+                Text(placeholder)
+                    .foregroundColor(.gray.opacity(0.5))
+                    .font(font)
+                    .padding(.horizontal, 5)
+                    .padding(.top, 7)
+            }
+            
+            TextEditor(text: $text)
+                .font(font)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
         }
     }
 }
