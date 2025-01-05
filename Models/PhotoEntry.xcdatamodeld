@@ -1,0 +1,11 @@
+entity PhotoEntry {
+    attribute id: UUID
+    attribute photo: Binary
+    attribute diaryText: String
+    attribute diaryTitle: String
+    attribute emotions: Transformable // Array of strings
+    attribute createdAt: Date
+    attribute lastModifiedAt: Date
+    attribute textOverlays: Transformable // Array of TextOverlay
+    attribute drawingPaths: Transformable // Array of DrawingPath
+} 

@@ -1,0 +1,11 @@
+entity CDPhotoEntry {
+    attribute id: UUID
+    attribute photo: Binary
+    attribute diaryText: String
+    attribute diaryTitle: String
+    attribute emotions: Transformable // Array of strings
+    attribute createdAt: Date
+    attribute lastModifiedAt: Date
+    attribute textOverlays: Binary // JSON data
+    attribute drawingPaths: Binary // JSON data
+} 

@@ -7,10 +7,16 @@
 
 import Foundation
 
-struct Emotion: Identifiable {
-    let id = UUID()
-    let name: String
-    let emoji: String
-    var isSelected: Bool = false
+public struct Emotion: Identifiable {
+    public let id = UUID()
+    public let name: String
+    public let emoji: String
+    public var isSelected: Bool = false
+    
+    public init(name: String, emoji: String, isSelected: Bool = false) {
+        self.name = name
+        self.emoji = emoji
+        self.isSelected = isSelected
+    }
 }
 

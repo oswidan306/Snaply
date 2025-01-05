@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct DiaryEntryView: View {
     @ObservedObject var viewModel: DiaryViewModel

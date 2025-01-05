@@ -11,6 +11,7 @@ public extension Models {
     struct PhotoEntry: Identifiable {
         public let id: UUID
         public let photo: UIImage
+        public let date: Date
         public var textOverlays: [TextOverlay]
         public var drawingPaths: [DrawingPath]
         public var emotions: [String]
@@ -21,6 +22,7 @@ public extension Models {
         public init(
             id: UUID = UUID(),
             photo: UIImage,
+            date: Date = Date(),
             textOverlays: [TextOverlay] = [],
             drawingPaths: [DrawingPath] = [],
             emotions: [String] = [],
@@ -29,6 +31,7 @@ public extension Models {
         ) {
             self.id = id
             self.photo = photo
+            self.date = date
             self.textOverlays = textOverlays
             self.drawingPaths = drawingPaths
             self.emotions = emotions

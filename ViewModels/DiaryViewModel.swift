@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 #if canImport(UIKit)
 import UIKit
@@ -14,17 +15,23 @@ import AppKit
 typealias UIImage = NSImage
 #endif
 
-class DiaryViewModel: ObservableObject {
-    @Published var entries: [Models.PhotoEntry] = []
-    @Published var currentEntry: Models.PhotoEntry?
-    @Published var draggedOverlayPositions: [UUID: CGPoint] = [:]
-    @Published var isDrawing = false
-    @Published var currentLine: Models.DrawingPath?
-    @Published var drawingPaths: [Models.DrawingPath] = []
-    @Published var selectedColor: Color = .white
-    @Published var isShowingEmotionPicker: Bool = false
-    @Published var isShowingDiary: Bool = false
-    @Published var emotions: [Emotion] = [
+public protocol DiaryViewModelProtocol: ObservableObject {
+    var entries: [Models.PhotoEntry] { get set }
+    var currentEntry: Models.PhotoEntry? { get set }
+    // ... add other required properties and methods
+}
+
+public class DiaryViewModel: DiaryViewModelProtocol {
+    @Published public var entries: [Models.PhotoEntry] = []
+    @Published public var currentEntry: Models.PhotoEntry?
+    @Published public var draggedOverlayPositions: [UUID: CGPoint] = [:]
+    @Published public var isDrawing = false
+    @Published public var currentLine: Models.DrawingPath?
+    @Published public var drawingPaths: [Models.DrawingPath] = []
+    @Published public var selectedColor: Color = .white
+    @Published public var isShowingEmotionPicker: Bool = false
+    @Published public var isShowingDiary: Bool = false
+    @Published public var emotions: [Emotion] = [
         Emotion(name: "Joy", emoji: "😊"),
         Emotion(name: "Love", emoji: "❤️"),
         Emotion(name: "Excited", emoji: "🤩"),
@@ -39,27 +46,31 @@ class DiaryViewModel: ObservableObject {
         Emotion(name: "Hopeful", emoji: "✨")
     ]
     
-    let availableColors: [Color] = [
+    @Published public var currentMonthYear: String = ""
+    @Published public var entriesForCurrentMonth: [Models.PhotoEntry] = []
+    private var currentDate = Date()
+    
+    public let availableColors: [Color] = [
         .white, .black, .blue, .green, .red, .purple,
         Color(red: 1.0, green: 0.7, blue: 0.9),  // Lighter pink
         .yellow, .orange
     ]
     
-    var photoFrame: CGRect = .zero
+    public var photoFrame: CGRect = .zero
     
     private let containerWidth: CGFloat
     
-    init(containerWidth: CGFloat) {
+    public init(containerWidth: CGFloat) {
         self.containerWidth = containerWidth
     }
     
-    var selectedEmotionsCount: Int {
+    public var selectedEmotionsCount: Int {
         emotions.filter { $0.isSelected }.count
     }
     
     // MARK: - Photo Management
     
-    func addNewPhoto(_ image: UIImage) {
+    public func addNewPhoto(_ image: UIImage) {
         let previousDiaryText = currentEntry?.diaryText ?? ""
         emotions.indices.forEach { emotions[$0].isSelected = false }
         let newEntry = Models.PhotoEntry(
@@ -70,7 +81,7 @@ class DiaryViewModel: ObservableObject {
         entries.append(newEntry)
     }
     
-    func updateEntry(_ entry: Models.PhotoEntry) {
+    public func updateEntry(_ entry: Models.PhotoEntry) {
         if let index = entries.firstIndex(where: { $0.id == entry.id }) {
             entries[index] = entry
             if currentEntry?.id == entry.id {
@@ -84,7 +95,7 @@ class DiaryViewModel: ObservableObject {
         }
     }
     
-    func replaceCurrentPhoto(_ image: UIImage) {
+    public func replaceCurrentPhoto(_ image: UIImage) {
         guard var entry = currentEntry else { return }
         let newEntry = Models.PhotoEntry(
             photo: image,
@@ -101,7 +112,7 @@ class DiaryViewModel: ObservableObject {
     
     // MARK: - Text Overlay Management
     
-    func addTextOverlay() {
+    public func addTextOverlay() {
         guard var mutableEntry = currentEntry else { return }
         mutableEntry.saveState()
         
@@ -123,7 +134,7 @@ class DiaryViewModel: ObservableObject {
         updateEntry(mutableEntry)
     }
     
-    func updateTextOverlay(
+    public func updateTextOverlay(
         id: UUID,
         text: String? = nil,
         position: CGPoint? = nil,
@@ -157,7 +168,7 @@ class DiaryViewModel: ObservableObject {
         updateEntry(entry)
     }
     
-    func updateTextOverlayStyle(
+    public func updateTextOverlayStyle(
         id: UUID, 
         fontSize: CGFloat? = nil, 
         fontStyle: Models.FontStyle? = nil,
@@ -183,7 +194,7 @@ class DiaryViewModel: ObservableObject {
         }
     }
     
-    func updateTextOverlayWidth(id: UUID, width: CGFloat) {
+    public func updateTextOverlayWidth(id: UUID, width: CGFloat) {
         guard var entry = currentEntry else { return }
         if let index = entry.textOverlays.firstIndex(where: { $0.id == id }) {
             entry.textOverlays[index].width = width
@@ -191,7 +202,7 @@ class DiaryViewModel: ObservableObject {
         }
     }
     
-    func deleteTextOverlay(id: UUID) {
+    public func deleteTextOverlay(id: UUID) {
         guard var entry = currentEntry else { return }
         entry.saveState()
         entry.textOverlays.removeAll(where: { $0.id == id })
@@ -199,7 +210,7 @@ class DiaryViewModel: ObservableObject {
         updateEntry(entry)
     }
     
-    func duplicateTextOverlay(id: UUID) -> UUID {
+    public func duplicateTextOverlay(id: UUID) -> UUID {
         guard var entry = currentEntry,
               let originalOverlay = entry.textOverlays.first(where: { $0.id == id }) else { return id }
         
@@ -224,7 +235,7 @@ class DiaryViewModel: ObservableObject {
     
     // MARK: - Drawing Management
     
-    func addDrawingPath(_ path: Models.DrawingPath) {
+    public func addDrawingPath(_ path: Models.DrawingPath) {
         guard var entry = currentEntry else { return }
         entry.saveState()
         let coloredPath = Models.DrawingPath(points: path.points, color: selectedColor)
@@ -235,7 +246,7 @@ class DiaryViewModel: ObservableObject {
     
     // MARK: - Position Management
     
-    func getActualPosition(for id: UUID, in frame: CGRect) -> CGPoint {
+    public func getActualPosition(for id: UUID, in frame: CGRect) -> CGPoint {
         let relativePosition = draggedOverlayPositions[id] ??
             currentEntry?.textOverlays.first(where: { $0.id == id })?.position ??
             CGPoint(x: 0.5, y: 0.5)
@@ -247,7 +258,7 @@ class DiaryViewModel: ObservableObject {
         )
     }
     
-    func convertToRelativePosition(_ absolutePosition: CGPoint, in frame: CGRect) -> CGPoint {
+    public func convertToRelativePosition(_ absolutePosition: CGPoint, in frame: CGRect) -> CGPoint {
         // Convert absolute position to percentage (0.0 to 1.0)
         CGPoint(
             x: (absolutePosition.x - frame.minX) / frame.width,
@@ -255,7 +266,7 @@ class DiaryViewModel: ObservableObject {
         )
     }
     
-    func convertToAbsolutePosition(_ relativePosition: CGPoint, in frame: CGRect) -> CGPoint {
+    public func convertToAbsolutePosition(_ relativePosition: CGPoint, in frame: CGRect) -> CGPoint {
         // Convert percentage position to absolute coordinates
         CGPoint(
             x: frame.minX + (relativePosition.x * frame.width),
@@ -263,14 +274,14 @@ class DiaryViewModel: ObservableObject {
         )
     }
     
-    func updatePosition(_ absolutePosition: CGPoint, for id: UUID, in frame: CGRect) {
+    public func updatePosition(_ absolutePosition: CGPoint, for id: UUID, in frame: CGRect) {
         let relativePosition = convertToRelativePosition(absolutePosition, in: frame)
         updateTextOverlay(id: id, position: relativePosition)
     }
     
     // MARK: - Emotion Management
     
-    func toggleEmotion(_ emotion: Emotion) {
+    public func toggleEmotion(_ emotion: Emotion) {
         if let index = emotions.firstIndex(where: { $0.id == emotion.id }) {
             if emotions[index].isSelected {
                 emotions[index].isSelected = false
@@ -281,7 +292,7 @@ class DiaryViewModel: ObservableObject {
         }
     }
     
-    func updateEmotions() {
+    public func updateEmotions() {
         guard var entry = currentEntry else { return }
         entry.emotions = emotions.filter { $0.isSelected }.map { $0.name }
         updateEntry(entry)
@@ -289,12 +300,12 @@ class DiaryViewModel: ObservableObject {
     
     // MARK: - Undo Management
     
-    func hasEdits() -> Bool {
+    public func hasEdits() -> Bool {
         guard let entry = currentEntry else { return false }
         return !entry.textOverlays.isEmpty || !entry.drawingPaths.isEmpty
     }
     
-    func undo() {
+    public func undo() {
         guard var entry = currentEntry else { return }
         if entry.undo() {
             let remainingPositions = entry.textOverlays.reduce(into: [UUID: CGPoint]()) { dict, overlay in
@@ -312,19 +323,19 @@ class DiaryViewModel: ObservableObject {
         updateEntry(entry)
     }
     
-    func updateDiaryText(_ text: String) {
+    public func updateDiaryText(_ text: String) {
         guard var entry = currentEntry else { return }
         entry.diaryText = text
         updateEntry(entry)
     }
     
-    func updateDiaryTitle(_ title: String) {
+    public func updateDiaryTitle(_ title: String) {
         guard var entry = currentEntry else { return }
         entry.diaryTitle = title
         updateEntry(entry)
     }
     
-    func toggleDiary() {
+    public func toggleDiary() {
         if !isShowingEmotionPicker {
             withAnimation(.easeInOut(duration: 0.6)) {
                 isShowingDiary.toggle()
@@ -332,11 +343,47 @@ class DiaryViewModel: ObservableObject {
         }
     }
     
-    func toggleEmotionPicker() {
+    public func toggleEmotionPicker() {
         withAnimation {
             isShowingEmotionPicker.toggle()
             isDrawing = false  // Always disable drawing when toggling emotions
         }
+    }
+    
+    public func previousMonth() {
+        if let newDate = Calendar.current.date(byAdding: .month, value: -1, to: currentDate) {
+            currentDate = newDate
+            updateCurrentMonthYear()
+            generateCalendarDays()
+        }
+    }
+    
+    public func nextMonth() {
+        if let newDate = Calendar.current.date(byAdding: .month, value: 1, to: currentDate) {
+            currentDate = newDate
+            updateCurrentMonthYear()
+            generateCalendarDays()
+        }
+    }
+    
+    public func generateCalendarDays() {
+        updateCurrentMonthYear()
+        // Filter entries for current month
+        let calendar = Calendar.current
+        entriesForCurrentMonth = entries.filter { entry in
+            calendar.isDate(entry.date, equalTo: currentDate, toGranularity: .month)
+        }
+    }
+    
+    private func updateCurrentMonthYear() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM yyyy"
+        currentMonthYear = formatter.string(from: currentDate)
+    }
+    
+    public func selectDate(_ date: Date) {
+        // Implement date selection logic here
+        // This can be used to show entries for the selected date
     }
 }
 
