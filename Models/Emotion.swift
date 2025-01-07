@@ -5,18 +5,12 @@
 //  Created by Omar Swidan on 12/15/24.
 //
 
-import Foundation
+import SwiftUI
 
 public struct Emotion: Identifiable {
     public let id = UUID()
     public let name: String
     public let emoji: String
     public var isSelected: Bool = false
-    
-    public init(name: String, emoji: String, isSelected: Bool = false) {
-        self.name = name
-        self.emoji = emoji
-        self.isSelected = isSelected
-    }
 }
 

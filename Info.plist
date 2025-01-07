@@ -6,5 +6,14 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>YOUR-FIREBASE-SCHEME</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

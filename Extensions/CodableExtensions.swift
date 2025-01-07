@@ -69,4 +69,34 @@ extension Models.FontFamily: Codable {
             self = .arial // Default fallback
         }
     }
+}
+
+// MARK: - FontStyle Codable
+extension Models.FontStyle: Codable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .regular:
+            try container.encode("regular")
+        case .bold:
+            try container.encode("bold")
+        case .italic:
+            try container.encode("italic")
+        }
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let value = try container.decode(String.self)
+        switch value {
+        case "regular":
+            self = .regular
+        case "bold":
+            self = .bold
+        case "italic":
+            self = .italic
+        default:
+            self = .regular
+        }
+    }
 } 
