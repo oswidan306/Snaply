@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var activeTextId: UUID?
     @State private var isTyping: Bool = false
     @State private var isDraggingUp = false
+    @StateObject private var authManager = AuthenticationManager()
     
     init(containerWidth: CGFloat) {
         _viewModel = StateObject(wrappedValue: DiaryViewModel(containerWidth: containerWidth))

@@ -11,7 +11,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>YOUR-FIREBASE-SCHEME</string>
+				<string>com.googleusercontent.apps.711929345611</string>
 			</array>
 		</dict>
 	</array>

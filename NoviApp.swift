@@ -7,28 +7,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
-        
-        // Test Firebase connection
-        let db = Firestore.firestore()
-        db.collection("test").document("test").setData([
-            "timestamp": FieldValue.serverTimestamp(),
-            "message": "Firebase is connected!"
-        ]) { err in
-            if let err = err {
-                print("Error writing to Firebase: \(err)")
-            } else {
-                print("Successfully connected to Firebase!")
-            }
-        }
-        
         return true
     }
 }
 
 @main
 struct NoviApp: App {
-    // register app delegate for Firebase setup
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var authManager = AuthenticationManager()
     
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -45,10 +31,14 @@ struct NoviApp: App {
 
     var body: some Scene {
         WindowGroup {
-            GeometryReader { geometry in
-                ContentView(containerWidth: geometry.size.width - 32)
+            if authManager.isAuthenticated {
+                GeometryReader { geometry in
+                    ContentView(containerWidth: geometry.size.width - 32)
+                }
+                .modelContainer(sharedModelContainer)
+            } else {
+                SignInView()
             }
         }
-        .modelContainer(sharedModelContainer)
     }
 } 
